@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Options</title>
+  <link rel="stylesheet" href="vendor/pico.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <main class="container-fluid">
+    <h6>Настройка каналів відправки повідомлень 
+      <a href="#" class="tooltip" data-tooltip="Краще вибрати хоча б один, інакше нічого нікуди слатись не буде">?</a>
+    </h6>
+    <form class="form">
+      <details>
+        <summary>Телеграм</summary>
+        <p>
+          <label class="input-wrapper">
+            Telegram ID
+            <input type="text" class="input" id="telegramId">
+          </label>
+          <label class="input-wrapper">
+            Telegram ID групи
+            <input type="text" class="input" id="telegramGroupId">
+          </label>
+          <label for="isSendMessageTelegram">
+            <input type="checkbox" id="isSendMessageTelegram" role="switch"> Слати нотіфікації в Телеграм
+          </label>
+        </p>
+      </details>
+
+      <details>
+        <summary>IFTTT</summary>
+        <p>
+          <label class="input-wrapper">
+            IFTTT Key
+            <input type="text" class="input" id="iftttKey">
+          </label>
+          <label class="input-wrapper">
+            Назва webhook
+            <input type="text" class="input" id="iftttEventName">
+          </label>
+          <label for="isSendIfttt">
+            <input type="checkbox" id="isSendIfttt" role="switch"> Слати нотіфікації в IFTTT
+          </label>
+        </p>
+      </details>
+
+      <details>
+        <summary>Slack</summary>
+        <p>
+          <label class="input-wrapper">
+            Slack webhook URL
+            <input type="text" class="input" id="slackWebhookUrl">
+          </label>
+          <label class="input-wrapper">
+            Кого заменшити?
+            <input type="text" class="input" id="slackMentionUsername">
+          </label>
+          <label class="input-wrapper">
+            В якому каналі?
+            <input type="text" class="input" id="slackChannelName">
+          </label>
+          <label for="isSendMessageSlack">
+            <input type="checkbox" id="isSendMessageSlack" role="switch"> Слати нотіфікації в Slack
+          </label>
+        </p>
+      </details>
+      <h6>Загальні настройки</h6>
+      <label class="input-wrapper">
+        Період перевірки нових оголошень (хвилини)
+        <input type="number" class="input" id="checkPeriod">
+      </label>
+      <label for="isShowNotifications">
+        <input type="checkbox" id="isShowNotifications" role="switch"> Показувати спливаючі нотіфікації
+      </label>
+      <label for="isProcessIdealista">
+        <input type="checkbox" id="isProcessIdealista" role="switch"> Слідкувати за Ідеаліста.
+      </label>
+      <label for="isProcessOlx">
+        <input type="checkbox" id="isProcessOlx" role="switch"> Слідкувати за OLX
+      </label>
+      <label for="isProcessFb">
+        <input type="checkbox" id="isProcessFb" role="switch"> Слідкувати за FB
+      </label>
+    <div id="status"></div>
+      <button type="submit" class="button" id="save">
+        Save
+      </button>
+    </form>
+
+
+    <script src="index.js"></script>
+  </main>
+</body>
+</html>

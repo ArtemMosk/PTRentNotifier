@@ -1,0 +1,18 @@
+body {
+  min-width: 500px;
+  min-height: 400px;
+  background-color: transparent;
+}
+
+.tooltip {
+  position: relative;
+  background: rgba(0,0,0,0.3);
+  padding: 3px 5px;
+  border-radius: 100%;
+  font-size: 8px;
+  cursor: help;
+}
+
+:root {
+  --font-size: 12px;
+}

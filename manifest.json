@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "version": "1.0.2",
+
+  "name": "PTRentNotifier",
+  "description": "Notifies about new rental offers",
+
+  "action": {
+    "default_popup": "src/index.html"
+  },
+  "permissions": ["tabs", "storage", "notifications"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+        "matches": [
+          "*://*.idealista.pt/*"
+        ],
+        "js": [
+            "src/parsers/parserIdealista.js"
+        ]
+    },
+    {
+      "matches": [
+        "*://*.olx.pt/*"
+      ],
+      "js": [
+          "src/parsers/parserOlx.js"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.facebook.com/*"
+      ],
+      "js": [
+          "src/parsers/parserFb.js"
+      ]
+    }
+  ]
+}
