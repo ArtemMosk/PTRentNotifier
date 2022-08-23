@@ -16,7 +16,7 @@ https://dev.to/ben/how-to-install-chrome-extensions-manually-from-github-1612
 ### Використання
 
 1. Після вставновлення по кліку на іконці розширення треба змінити налаштування розширення за власним смаком:
-![Налаштування](docs/screens/settings.jpg)
+![Налаштування](doc/screens/settings.jpg)
 2. Відкриваємо вкладку з olx.pt, facebook.com/marketplace/ або idealista.pt
 3. Фільтруємо те, що підходить
 4. Сортуємо таким чином, щоб найсвіжіші обʼяви були зверху
