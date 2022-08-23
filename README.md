@@ -27,6 +27,10 @@ https://dev.to/ben/how-to-install-chrome-extensions-manually-from-github-1612
 #### Налаштування
 ![Налаштування](doc/screens/settings.jpg)
 
+##### Налаштування Телеграм
+
+Для налаштування нотифікацій потрібно створити бота [бота](https://core.telegram.org/bots#6-botfather) і [BotFather](https://t.me/botfather) видасть вам токен, який треба занести в форму налаштувань розширення. Це була легка частина, тепер треба створити групу, додати туди бота (як учасника) і визначити [Chat ID](https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id). Chat ID теж заносимо в налаштування.
+
 ### Зворотній звʼязок
 
 Це не жарт, я дійсно перевіряю це мило: [4spamartem@gmail.com](4spamartem@gmail.com).
