@@ -296,7 +296,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         loadSettings();
     }
     if (msg === 'testTelegram') {
-        sendMessageTelegram("Доброго вечора", true);
+        sendMessageTelegram("Паляниця", true);
     }
 });
 
