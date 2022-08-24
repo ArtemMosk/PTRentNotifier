@@ -48,8 +48,8 @@ function initiatePageCheck() {
     parseIntervalId = setInterval(entriesParseRequest, applicationSettings.checkPeriod * 60 * 1000);
 }
 
-function sendMessageTelegram(message) {
-    if (!applicationSettings.isSendMessageTelegram) {
+function sendMessageTelegram(message, forceSend) {
+    if (!applicationSettings.isSendMessageTelegram && !forceSend) {
         console.debug("Telegram is turned off, skipping send");
         return;
     }
@@ -73,7 +73,7 @@ function sendMessageNotification(message) {
     chrome.notifications.create('', {
         title: "Оновлення фонової сторінки",
         message: message,
-        iconUrl: '/src/vendor/img/keyhole64_b.png',
+        iconUrl: '/src/vendor/img/keyhole32.png',
         type: 'basic'
       });
 }
@@ -251,7 +251,7 @@ function buildStrFromJson(entry, separator) {
 function processNewEntries(entries) {
     entries.forEach(entry => {
         sendMessageIfttt(entry);
-        sendMessageTelegram(buildStrFromJson(entry, "%0A"));
+        sendMessageTelegram(buildStrFromJson(entry, "%0A"), false);
         sendMessageNotification(buildStrFromJson(entry, "\n"));
         sendMessageSlack(buildStrFromJson(entry, "\n"));
     });   
@@ -294,6 +294,9 @@ function requestEntriesList(hostPattern) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg === 'updateSettings') {
         loadSettings();
+    }
+    if (msg === 'testTelegram') {
+        sendMessageTelegram("Доброго вечора", true);
     }
 });
 

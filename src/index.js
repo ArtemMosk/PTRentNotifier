@@ -40,18 +40,18 @@ function saveOptions() {
   }, function() {
     // Update status to let user know options were saved.
     var status = document.getElementById('status');
-    status.textContent = 'Options saved.';
+    status.textContent = 'Збережено';
     setTimeout(function() {
        status.textContent = '';
-    }, 3000);
+    }, 1000);
   });
 
-  sendMessageToBackgroundScript();
+  sendMessageToBackgroundScript("updateSettings");
 }
 
-function sendMessageToBackgroundScript() {
-  chrome.runtime.sendMessage("updateSettings", response => {
-    console.debug("Sent update settings request.");
+function sendMessageToBackgroundScript(msg) {
+  chrome.runtime.sendMessage(msg, response => {
+    console.debug("Sent request to background script: " + msg);
   });
 }
 // Restores select box and checkbox state using the preferences
@@ -97,3 +97,10 @@ function restoreOptions() {
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click',
     saveOptions);
+
+function testTelegramCaller() {
+  sendMessageToBackgroundScript("testTelegram");
+  return false;
+}
+
+document.getElementById('testTelegram').addEventListener('click', testTelegramCaller);

@@ -13,6 +13,12 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "icons": {
+    "32": "src/vendor/img/keyhole_32.png",
+    "48": "src/vendor/img/keyhole_48.png",
+    "64": "src/vendor/img/keyhole_64.png",
+    "128": "src/vendor/img/keyhole_128.png"
+  },
   "content_scripts": [
     {
         "matches": [
