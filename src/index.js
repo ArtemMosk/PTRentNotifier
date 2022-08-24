@@ -99,6 +99,7 @@ document.getElementById('save').addEventListener('click',
     saveOptions);
 
 function testTelegramCaller() {
+  saveOptions();
   sendMessageToBackgroundScript("testTelegram");
   return false;
 }
