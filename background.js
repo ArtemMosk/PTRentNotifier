@@ -24,6 +24,7 @@ function loadSettings() {
         slackMentionUsername: "",
         isSendMessageSlack: false,
         checkPeriod: "10",
+        numberOfTabsToCheck: "1",
         isShowNotifications: true,
         iftttEventName: "",
         iftttKey: "",
@@ -226,7 +227,9 @@ function entriesParseRequest() {
         function requestEntriesListCaller() {
             requestEntriesList(urlPattern);
         }
-        chrome.tabs.reload(tabs[0].id, {}, requestEntriesListCaller);
+        for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+            chrome.tabs.reload(tabs[i].id, {}, requestEntriesListCaller);
+        }
     });
   }
 }
@@ -267,26 +270,28 @@ function requestEntriesList(hostPattern) {
                 console.info(getNoTabsFoundMessage());
                 return;
             }
-            chrome.tabs.sendMessage(tabs[0].id, {"msg": "getEntries"}, function(response) {
-                console.debug("Got response from content script");
-                console.debug("Got new entries from content script " + JSON.stringify(response, null, "\t"));
-                if (!response) { 
-                    console.info("No response, returning");
-                    return; 
-                }
-                const data = response.data;
-                if (!data || !data.length) {
-                    console.info("No result from parser, returning.")
-                }
-                // Got entries list in json format, checking if there are any new entries 
-                const newEntries = getUniqueEntries(data);
+            for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+                chrome.tabs.sendMessage(tabs[i].id, {"msg": "getEntries"}, function(response) {
+                    console.debug("Got response from content script");
+                    console.debug("Got new entries from content script " + JSON.stringify(response, null, "\t"));
+                    if (!response) { 
+                        console.info("No response, returning");
+                        return; 
+                    }
+                    const data = response.data;
+                    if (!data || !data.length) {
+                        console.info("No result from parser, returning.")
+                    }
+                    // Got entries list in json format, checking if there are any new entries 
+                    const newEntries = getUniqueEntries(data);
 
-                if (!newEntries || !newEntries.length) { 
-                    console.debug("No new entries, returning");
-                    return; 
-                }
-                processNewEntries(newEntries);
-            });
+                    if (!newEntries || !newEntries.length) { 
+                        console.debug("No new entries, returning");
+                        return; 
+                    }
+                    processNewEntries(newEntries);
+                });
+            }
         });
     }, 10000);
 }

@@ -11,6 +11,7 @@ function saveOptions() {
   const slackChannelName = document.getElementById('slackChannelName').value;
 
   const checkPeriod = document.getElementById('checkPeriod').value;
+  const numberOfTabsToCheck = document.getElementById('numberOfTabsToCheck').value;
 
   const isShowNotifications = document.getElementById('isShowNotifications').checked;
   const isSendIfttt = document.getElementById('isSendIfttt').checked;
@@ -25,6 +26,7 @@ function saveOptions() {
     telegramId: telegramId,
     telegramGroupId: telegramGroupId,
     checkPeriod: checkPeriod,
+    numberOfTabsToCheck: numberOfTabsToCheck,
     slackWebhookUrl: slackWebhookUrl,
     slackMentionUsername: slackMentionUsername,
     slackChannelName: slackChannelName,
@@ -62,6 +64,7 @@ function restoreOptions() {
     telegramId: "",
     telegramGroupId: "",
     checkPeriod: "10",
+    numberOfTabsToCheck: "1",
     slackWebhookUrl: "",
     slackMentionUsername: "",
     slackChannelName: "",
@@ -78,6 +81,7 @@ function restoreOptions() {
     document.getElementById('telegramId').value = items.telegramId;
     document.getElementById('telegramGroupId').value = items.telegramGroupId;
     document.getElementById('checkPeriod').value = items.checkPeriod;
+    document.getElementById('numberOfTabsToCheck').value = items.numberOfTabsToCheck;
     document.getElementById('slackWebhookUrl').value = items.slackWebhookUrl;
     document.getElementById('slackMentionUsername').value = items.slackMentionUsername;
     document.getElementById('slackChannelName').value = items.slackChannelName;
