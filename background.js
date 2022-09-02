@@ -1,9 +1,14 @@
 console.log("Entering background script")
+import SenderFactory from '/src/sender.js';
+
+
 const IDEALISTA_KEY = "idealista";
 const OLX_KEY = "olx";
 const FB_KEY = "fb";
 
-let parseIntervalId = 0;
+const PAGE_CHECK = "pageCheck";
+const PAGE_RELOAD = "pageReload";
+
 const hostPatterns = [
     {key: IDEALISTA_KEY, urlPattern: "*://*.idealista.pt/*"},
     {key: OLX_KEY, urlPattern: "*://*.olx.pt/*"}, 
@@ -12,10 +17,9 @@ const hostPatterns = [
 
 let isDebug = false;
 
-const allProcessed = new Set();
 let applicationSettings = {}
 
-function loadSettings() {
+function loadSettingsAndRunCheck() {
     chrome.storage.sync.get({
         telegramId: "",
         telegramGroupId: "",
@@ -36,128 +40,66 @@ function loadSettings() {
           applicationSettings = items;
           console.debug("Settings loaded: ");
           console.debug(applicationSettings);
-          initiatePageCheck();
+          chrome.storage.local.get({allProcessed: {}}, items => {
+              console.debug("Loaded processed items: ");
+              console.debug(items);
+              applicationSettings.allProcessed = items.allProcessed;
+              initiatePageCheck();
+          }); 
+
       });
 }
 
 function initiatePageCheck() {
     entriesParseRequest();
-
-    if (parseIntervalId) {
-        clearInterval(parseIntervalId);
+    const cp = applicationSettings.checkPeriod;
+    let intCp = 10;
+    if (typeof cp === 'string' || cp instanceof String) {
+        intCp = parseInt(cp);
     }
-    parseIntervalId = setInterval(entriesParseRequest, applicationSettings.checkPeriod * 60 * 1000);
+    chrome.alarms.create(PAGE_CHECK, {delayInMinutes: intCp});
+}
+//Adds entity to processed list and sets current timestamp to clear later
+function addProcessed(entityList, entity) {
+    entityList[entity] = new Date().getTime();
 }
 
-function sendMessageTelegram(message, forceSend) {
-    if (!applicationSettings.isSendMessageTelegram && !forceSend) {
-        console.debug("Telegram is turned off, skipping send");
-        return;
-    }
-    var token = applicationSettings.telegramId;
-    var chat_id = applicationSettings.telegramGroupId;
-    if (!token || !chat_id) {
-        console.info("Telegram token or chat ID not specified, skipping sending to Telegram. ");
-        return;
-    }
-    var url = 'https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + message + '&parse_mode=html';
-    console.debug("Sending message " + url);
-    
-    fetch(url);
+//Save processed entries to application settings
+function saveProcessed(entryList) {
+    console.debug("Saving processed list: ");
+    console.debug(entryList);
+    chrome.storage.local.set({allProcessed: entryList});
 }
 
-function sendMessageNotification(message) {
-    if (!applicationSettings.isShowNotifications) {
-        console.debug("Notifications are turned off, skipping popup");
-        return;
-    }
-    chrome.notifications.create('', {
-        title: "Оновлення фонової сторінки",
-        message: message,
-        iconUrl: '/src/vendor/img/keyhole32.png',
-        type: 'basic'
-      });
-}
-
-function sendMessageIfttt(messageJson) {
-    if (!applicationSettings.isSendIfttt) {
-        console.debug("IFTTT is turned off, skipping send");
-        return;
-    }
-
-    const key = applicationSettings.iftttKey;
-    if (!key) {
-        console.info("IFTTT key is not specified, skipping send to IFTTT.");
-        return;
-    }
-
-    let url = "https://maker.ifttt.com/trigger/" + applicationSettings.iftttEventName +"/json/with/key/" + key;
-    var formBody = [];
-    for (var property in messageJson) {
-        var encodedKey = encodeURIComponent(property);
-        var encodedValue = encodeURIComponent(messageJson[property]);
-        formBody.push(encodedKey + "=" + encodedValue);
-    }
-    formBody = formBody.join("&");
-    console.debug("Sending message " + url);
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-        },
-        body: formBody
-    }).catch(error => {
-        console.warn("CORS raising error but IFTT should still receive message. If it does not check key and event name.");
+// Clears items older than Xh
+function clearProcessed(entityList, hours) {
+    let curDate = new Date();
+    //substracting 10h
+    curDate.setHours(curDate.getHours() - hours);
+    const tooOldThresholdTimestamp = curDate.getTime();
+    let result = {};
+    console.debug("Clearing entries older than " + hours + " hours. Threshold date/time is " + new Date(tooOldThresholdTimestamp));
+    //Going over list, moving to result only items newer than Xh
+    Object.keys(entityList).map(key => {
+        const entityTimestamp = entityList[key];
+        if (entityTimestamp < tooOldThresholdTimestamp) {
+            console.debug("Entity is " + hours + " hours old, removing from watcher :" + key + " " + new Date(entityTimestamp));
+        } else {
+            result[key] = entityList[key];
+        }
     });
+    return result;
 }
 
-function sendMessageSlack(message) {
-    if (!applicationSettings.isSendMessageSlack) {
-        console.debug("Slack is turned off, skipping send");
-        return;
-    }
-
-    const url = applicationSettings.slackWebhookUrl;
-    if (!url) {
-        console.info("Slack webhook url is not specified, skipping send to slack.");
-        return;
-    }
-    
-    const smu = applicationSettings.slackMentionUsername ?  "<@" + applicationSettings.slackMentionUsername.replace(/@/g, "") + ">" : ""
-    const channelName = "#" + applicationSettings.slackChannelName.replace(/[#@]/g, "");
-    const slackMentionUsername = smu;
-
-    console.debug("Sending message " + url);
-    let escMessage = escapeSpecialChars(message);
-
-    fetch(url, {
-        method: 'POST',
-        body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + slackMentionUsername + escMessage +"\", \"icon_emoji\": \":ghost:\"}"
-    }).catch(error => {
-        console.warn("Can't send message to slack. Please check webhook URL");
-        //console.debug(error);
-    });
-}
-
-function escapeSpecialChars(str) {
-    return str.replace(/\\n/g, "\\n")
-               .replace(/\\'/g, "\\'")
-               .replace(/\\"/g, '\\"')
-               .replace(/\\&/g, "\\&")
-               .replace(/\\r/g, "\\r")
-               .replace(/\\t/g, "\\t")
-               .replace(/\\b/g, "\\b")
-               .replace(/"/g, "'")
-               .replace(/\\f/g, "\\f");
-};
-
-function getUniqueEntries(newEntries) {
+function getUniqueEntries(allProcessed, newEntries) {
     let result = [];
-    if (!allProcessed.size) {
-        newEntries.forEach(item => allProcessed.add(item.url));
+    if (!Object.keys(allProcessed).length) {
+        newEntries.forEach(item => addProcessed(allProcessed, item.url));
         console.log("First run, skipping all entries");
+        saveProcessed(allProcessed);
         return result;
     }
+    allProcessed = clearProcessed(allProcessed, 10)
     
     //Consider listing as old if it is older than check interval * 1.5.
     //In such case entry did not appear in last result but for some reason present here. Probably ad listings are popping up, not interested.
@@ -179,16 +121,22 @@ function getUniqueEntries(newEntries) {
             continue;
         }
 
-        if (allProcessed.has(entry.url)) {
+        if (allProcessed[entry.url]) {
             console.debug("Url " + entry.url + " is already processed. Skipping. ");
             continue;
         }
 
-        allProcessed.add(entry.url);
+        addProcessed(allProcessed, entry.url);
+        console.debug("Adding entry to be sent:");
+        console.debug(entry);
         result.push(entry);
     }
-    console.log("Found unique entries:");
-    console.log(result);
+    console.debug("Found unique entries:");
+    console.debug(result);
+    saveProcessed(allProcessed);
+
+    //TODO Ugly hack to sync global state. Do not use global state!
+    applicationSettings.allProcessed = allProcessed;
     return result;
 }
 
@@ -197,41 +145,46 @@ function getNoTabsFoundMessage() {
 }
 
 function entriesParseRequest() {
-  console.debug("Entered entriesParseRequest");
+    
+    console.debug("Entered entriesParseRequest");
+    let patternsToCheck = [];
+    for (let i = 0; i < hostPatterns.length; i++) {
+        let key = hostPatterns[i].key;
+        let as = applicationSettings;
 
-  for (let i = 0; i < hostPatterns.length; i++) {
-    let key = hostPatterns[i].key;
-    let as = applicationSettings;
+        if (!as.isProcessOlx && key === OLX_KEY) {
+            console.debug("OLX parsing turned off in settings, skipping.")
+            continue;
+        }
+        if (!as.isProcessIdealista && key === IDEALISTA_KEY) {
+            console.debug("Idealista parsing turned off in settings, skipping.")
+            continue;
+        }
+        if (!as.isProcessFb && key === FB_KEY) {
+            console.debug("FB parsing turned off in settings, skipping.")
+            continue;
+        }
 
-    if (!as.isProcessOlx && key === OLX_KEY) {
-        console.debug("OLX parsing turned off in settings, skipping.")
-        continue;
+        let urlPattern = hostPatterns[i].urlPattern;
+        patternsToCheck.push(urlPattern);
+        chrome.tabs.query({ url: urlPattern }, function(tabs) {
+            console.debug("Before reloading tab");
+            if (!tabs || !tabs.length) {
+                console.info(getNoTabsFoundMessage());
+                return;
+            }
+            
+            for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+                chrome.tabs.reload(tabs[i].id, {});
+            }
+        });
     }
-    if (!as.isProcessIdealista && key === IDEALISTA_KEY) {
-        console.debug("Idealista parsing turned off in settings, skipping.")
-        continue;
-    }
-    if (!as.isProcessFb && key === FB_KEY) {
-        console.debug("FB parsing turned off in settings, skipping.")
-        continue;
-    }
-
-    let urlPattern = hostPatterns[i].urlPattern;
-    chrome.tabs.query({ url: urlPattern }, function(tabs) {
-        console.debug("Before reloading tab");
-        if (!tabs || !tabs.length) {
-            console.info(getNoTabsFoundMessage());
-            return;
-        }
-        //additional function to pass hostPattern to callback
-        function requestEntriesListCaller() {
-            requestEntriesList(urlPattern);
-        }
-        for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
-            chrome.tabs.reload(tabs[i].id, {}, requestEntriesListCaller);
-        }
+    chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
+        let tmp = settings.hostPatternsToProcess.concat(patternsToCheck);
+        chrome.storage.sync.set({hostPatternsToProcess: tmp}); 
     });
-  }
+
+    chrome.alarms.create(PAGE_RELOAD, {delayInMinutes: 1});
 }
 
 function buildStrFromJson(entry, separator) {
@@ -252,57 +205,87 @@ function buildStrFromJson(entry, separator) {
 }
 
 function processNewEntries(entries) {
+    const sender = (new SenderFactory).getSender(applicationSettings);
+
     entries.forEach(entry => {
-        sendMessageIfttt(entry);
-        sendMessageTelegram(buildStrFromJson(entry, "%0A"), false);
-        sendMessageNotification(buildStrFromJson(entry, "\n"));
-        sendMessageSlack(buildStrFromJson(entry, "\n"));
+        sender.sendMessageIfttt(entry);
+        sender.sendMessageTelegram(buildStrFromJson(entry, "%0A"), false);
+        sender.sendMessageNotification(buildStrFromJson(entry, "\n"));
+        sender.sendMessageSlack(buildStrFromJson(entry, "\n"));
     });   
 }
 
 function requestEntriesList(hostPattern) {
-    setTimeout(function() {
-        chrome.tabs.query({ url: hostPattern }, function(tabs) {
-            console.debug("Tab is reloaded, sending request for parsing");
-            console.debug("Found tabs:")
-            console.debug(tabs);
-            if (!tabs || !tabs.length) {
-                console.info(getNoTabsFoundMessage());
-                return;
-            }
-            for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
-                chrome.tabs.sendMessage(tabs[i].id, {"msg": "getEntries"}, function(response) {
-                    console.debug("Got response from content script");
-                    console.debug("Got new entries from content script " + JSON.stringify(response, null, "\t"));
-                    if (!response) { 
-                        console.info("No response, returning");
-                        return; 
-                    }
-                    const data = response.data;
-                    if (!data || !data.length) {
-                        console.info("No result from parser, returning.")
-                    }
-                    // Got entries list in json format, checking if there are any new entries 
-                    const newEntries = getUniqueEntries(data);
+    chrome.tabs.query({ url: hostPattern }, function(tabs) {
+        console.debug("Tab is reloaded, sending request for parsing");
+        console.debug("Found tabs:")
+        console.debug(tabs);
+        if (!tabs || !tabs.length) {
+            console.info(getNoTabsFoundMessage());
+            return;
+        }
+        for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+            chrome.tabs.sendMessage(tabs[i].id, {"msg": "getEntries"}, function(response) {
+                console.debug("Got response from content script");
+                console.debug("Got new entries from content script: "); 
+                console.debug(response);
+                if (!response) { 
+                    console.info("No response, returning");
+                    return; 
+                }
+                const data = response.data;
+                if (!data || !data.length) {
+                    console.info("No result from parser, returning.")
+                }
+                // Got entries list in json format, checking if there are any new entries 
+                const newEntries = getUniqueEntries(applicationSettings.allProcessed, data);
 
-                    if (!newEntries || !newEntries.length) { 
-                        console.debug("No new entries, returning");
-                        return; 
-                    }
-                    processNewEntries(newEntries);
-                });
-            }
-        });
-    }, 10000);
+                if (!newEntries || !newEntries.length) { 
+                    console.debug("No new entries, returning");
+                    return; 
+                }
+                processNewEntries(newEntries);
+            });
+        }
+    });
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg === 'updateSettings') {
-        loadSettings();
+        loadSettingsAndRunCheck();
     }
     if (msg === 'testTelegram') {
-        sendMessageTelegram("Паляниця", true);
+        const sender = (new SenderFactory()).getSender(applicationSettings);
+        sender.sendMessageTelegram("Паляниця", true);
     }
 });
 
-loadSettings();
+chrome.runtime.onInstalled.addListener(details => {
+    console.info("Extension install background script onInstalled");
+    loadSettingsAndRunCheck(); 
+});
+
+chrome.runtime.onStartup.addListener(details => {
+    console.info("Extension startup background script onStartup");
+    loadSettingsAndRunCheck(); 
+});
+
+chrome.management.onEnabled.addListener(details => {
+    console.info("Extension startup background script onEnabled");
+    loadSettingsAndRunCheck(); 
+});
+
+chrome.alarms.onAlarm.addListener(alarm => {
+    console.debug("Woke up, starting check. Alarm: " + JSON.stringify(alarm));
+    if (alarm.name === PAGE_CHECK) {
+        loadSettingsAndRunCheck();
+    }
+    if (alarm.name === PAGE_RELOAD) {
+        chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
+            for (let i = 0; i < settings.hostPatternsToProcess.length; i++) {
+                requestEntriesList(settings.hostPatternsToProcess[i]);
+            }
+            chrome.storage.sync.set({hostPatternsToProcess: []});
+        });
+    }
+});
