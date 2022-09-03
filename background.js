@@ -7,7 +7,7 @@ const OLX_KEY = "olx";
 const FB_KEY = "fb";
 
 const PAGE_CHECK = "pageCheck";
-const PAGE_RELOAD = "pageReload";
+const PAGE_RELOADED = "pageReload";
 
 const hostPatterns = [
     {key: IDEALISTA_KEY, urlPattern: "*://*.idealista.pt/*"},
@@ -19,7 +19,7 @@ let isDebug = false;
 
 let applicationSettings = {}
 
-function loadSettingsAndRunCheck() {
+function loadSettingsAndRun(toRun) {
     chrome.storage.sync.get({
         telegramId: "",
         telegramGroupId: "",
@@ -44,20 +44,20 @@ function loadSettingsAndRunCheck() {
               console.debug("Loaded processed items: ");
               console.debug(items);
               applicationSettings.allProcessed = items.allProcessed;
-              initiatePageCheck();
+              toRun();
           }); 
 
       });
 }
 
 function initiatePageCheck() {
-    entriesParseRequest();
     const cp = applicationSettings.checkPeriod;
     let intCp = 10;
     if (typeof cp === 'string' || cp instanceof String) {
         intCp = parseInt(cp);
     }
     chrome.alarms.create(PAGE_CHECK, {delayInMinutes: intCp});
+    entriesParseRequest();
 }
 //Adds entity to processed list and sets current timestamp to clear later
 function addProcessed(entityList, entity) {
@@ -147,6 +147,7 @@ function getNoTabsFoundMessage() {
 function entriesParseRequest() {
     
     console.debug("Entered entriesParseRequest");
+    chrome.alarms.create(PAGE_RELOADED, {delayInMinutes: 1});
     let patternsToCheck = [];
     for (let i = 0; i < hostPatterns.length; i++) {
         let key = hostPatterns[i].key;
@@ -184,7 +185,6 @@ function entriesParseRequest() {
         chrome.storage.sync.set({hostPatternsToProcess: tmp}); 
     });
 
-    chrome.alarms.create(PAGE_RELOAD, {delayInMinutes: 1});
 }
 
 function buildStrFromJson(entry, separator) {
@@ -252,7 +252,7 @@ function requestEntriesList(hostPattern) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg === 'updateSettings') {
-        loadSettingsAndRunCheck();
+        loadSettingsAndRun(initiatePageCheck);
     }
     if (msg === 'testTelegram') {
         const sender = (new SenderFactory()).getSender(applicationSettings);
@@ -262,30 +262,34 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info("Extension install background script onInstalled");
-    loadSettingsAndRunCheck(); 
+    loadSettingsAndRun(initiatePageCheck); 
 });
 
 chrome.runtime.onStartup.addListener(details => {
     console.info("Extension startup background script onStartup");
-    loadSettingsAndRunCheck(); 
+    loadSettingsAndRun(initiatePageCheck); 
 });
 
 chrome.management.onEnabled.addListener(details => {
     console.info("Extension startup background script onEnabled");
-    loadSettingsAndRunCheck(); 
+    loadSettingsAndRun(initiatePageCheck); 
 });
+
+function pageReloadHandler() {
+    chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
+        for (let i = 0; i < settings.hostPatternsToProcess.length; i++) {
+            requestEntriesList(settings.hostPatternsToProcess[i]);
+        }
+        chrome.storage.sync.set({hostPatternsToProcess: []});
+    });
+}
 
 chrome.alarms.onAlarm.addListener(alarm => {
     console.debug("Woke up, starting check. Alarm: " + JSON.stringify(alarm));
     if (alarm.name === PAGE_CHECK) {
-        loadSettingsAndRunCheck();
+        loadSettingsAndRun(initiatePageCheck);
     }
-    if (alarm.name === PAGE_RELOAD) {
-        chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
-            for (let i = 0; i < settings.hostPatternsToProcess.length; i++) {
-                requestEntriesList(settings.hostPatternsToProcess[i]);
-            }
-            chrome.storage.sync.set({hostPatternsToProcess: []});
-        });
+    if (alarm.name === PAGE_RELOADED) {
+        loadSettingsAndRun(pageReloadHandler);
     }
 });
