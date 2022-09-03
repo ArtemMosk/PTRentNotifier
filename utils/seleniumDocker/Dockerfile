@@ -1,4 +1,5 @@
-FROM selenium/node-standalone:4.4.0-20220831
+FROM selenium/standalone-chrome:4.4.0-20220831
+
 
 ARG DEFULT_VNC_PASSWORD=someComplexPassword
 
