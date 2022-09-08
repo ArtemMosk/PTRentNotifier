@@ -12,7 +12,7 @@ function getTextFromDomElem(parentElement, selector) {
 
 function getPostedTimestamp(txtDateTime) {
     result = -1;
-    const regex = /(\d+) minutos/;
+    const regex = /(\d+) minut/;
     const found = txtDateTime.match(regex);
     if (found) {
         let d = new Date();
