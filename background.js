@@ -1,4 +1,8 @@
-console.log("Entering background script")
+import LogWrapper from '/src/logWrapper.js';
+
+const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes.REMOTE_CONSOLE);
+
+logger.debug("Entering background script")
 import SenderFactory from '/src/sender.js';
 
 
@@ -38,11 +42,11 @@ function loadSettingsAndRun(toRun) {
         isProcessOlx: true,
       }, function(items) {
           applicationSettings = items;
-          console.debug("Settings loaded: ");
-          console.debug(applicationSettings);
+          logger.debug("Settings loaded: ");
+          logger.debug(applicationSettings);
           chrome.storage.local.get({allProcessed: {}}, items => {
-              console.debug("Loaded processed items: ");
-              console.debug(items);
+              logger.debug("Loaded processed items: ");
+              logger.debug(items);
               applicationSettings.allProcessed = items.allProcessed;
               toRun();
           }); 
@@ -66,8 +70,8 @@ function addProcessed(entityList, entity) {
 
 //Save processed entries to application settings
 function saveProcessed(entryList) {
-    console.debug("Saving processed list: ");
-    console.debug(entryList);
+    logger.debug("Saving processed list: ");
+    logger.debug(entryList);
     chrome.storage.local.set({allProcessed: entryList});
 }
 
@@ -78,12 +82,12 @@ function clearProcessed(entityList, hours) {
     curDate.setHours(curDate.getHours() - hours);
     const tooOldThresholdTimestamp = curDate.getTime();
     let result = {};
-    console.debug("Clearing entries older than " + hours + " hours. Threshold date/time is " + new Date(tooOldThresholdTimestamp));
+    logger.debug("Clearing entries older than " + hours + " hours. Threshold date/time is " + new Date(tooOldThresholdTimestamp));
     //Going over list, moving to result only items newer than Xh
     Object.keys(entityList).map(key => {
         const entityTimestamp = entityList[key];
         if (entityTimestamp < tooOldThresholdTimestamp) {
-            console.debug("Entity is " + hours + " hours old, removing from watcher :" + key + " " + new Date(entityTimestamp));
+            logger.debug("Entity is " + hours + " hours old, removing from watcher :" + key + " " + new Date(entityTimestamp));
         } else {
             result[key] = entityList[key];
         }
@@ -95,7 +99,7 @@ function getUniqueEntries(allProcessed, newEntries) {
     let result = [];
     if (!Object.keys(allProcessed).length) {
         newEntries.forEach(item => addProcessed(allProcessed, item.url));
-        console.log("First run, skipping all entries");
+        logger.log("First run, skipping all entries");
         saveProcessed(allProcessed);
         return result;
     }
@@ -111,28 +115,28 @@ function getUniqueEntries(allProcessed, newEntries) {
         //Probably we just did not bother to parse time of older entries
         if (isDebug) { result.push(entry); isDebug = false; }
         if (t === undefined || t === -1) {
-            console.debug(entry.url + " no posting time specified, skipping");
+            logger.debug(entry.url + " no posting time specified, skipping");
             continue;
         }
 
         if (t && t < tooOldTreshold) {
-            console.debug(entry.url + " too old, skipping");
-            console.debug(new Date(t));
+            logger.debug(entry.url + " too old, skipping");
+            logger.debug(new Date(t));
             continue;
         }
 
         if (allProcessed[entry.url]) {
-            console.debug("Url " + entry.url + " is already processed. Skipping. ");
+            logger.debug("Url " + entry.url + " is already processed. Skipping. ");
             continue;
         }
 
         addProcessed(allProcessed, entry.url);
-        console.debug("Adding entry to be sent:");
-        console.debug(entry);
+        logger.debug("Adding entry to be sent:");
+        logger.debug(entry);
         result.push(entry);
     }
-    console.debug("Found unique entries:");
-    console.debug(result);
+    logger.debug("Found unique entries:");
+    logger.debug(result);
     saveProcessed(allProcessed);
 
     //TODO Ugly hack to sync global state. Do not use global state!
@@ -146,7 +150,7 @@ function getNoTabsFoundMessage() {
 
 function entriesParseRequest() {
     
-    console.debug("Entered entriesParseRequest");
+    logger.debug("Entered entriesParseRequest");
     chrome.alarms.create(PAGE_RELOADED, {delayInMinutes: 1});
     let patternsToCheck = [];
     for (let i = 0; i < hostPatterns.length; i++) {
@@ -154,24 +158,24 @@ function entriesParseRequest() {
         let as = applicationSettings;
 
         if (!as.isProcessOlx && key === OLX_KEY) {
-            console.debug("OLX parsing turned off in settings, skipping.")
+            logger.debug("OLX parsing turned off in settings, skipping.")
             continue;
         }
         if (!as.isProcessIdealista && key === IDEALISTA_KEY) {
-            console.debug("Idealista parsing turned off in settings, skipping.")
+            logger.debug("Idealista parsing turned off in settings, skipping.")
             continue;
         }
         if (!as.isProcessFb && key === FB_KEY) {
-            console.debug("FB parsing turned off in settings, skipping.")
+            logger.debug("FB parsing turned off in settings, skipping.")
             continue;
         }
 
         let urlPattern = hostPatterns[i].urlPattern;
         patternsToCheck.push(urlPattern);
         chrome.tabs.query({ url: urlPattern }, function(tabs) {
-            console.debug("Before reloading tab");
+            logger.debug("Before reloading tab");
             if (!tabs || !tabs.length) {
-                console.info(getNoTabsFoundMessage());
+                logger.info(getNoTabsFoundMessage());
                 return;
             }
             
@@ -217,31 +221,31 @@ function processNewEntries(entries) {
 
 function requestEntriesList(hostPattern) {
     chrome.tabs.query({ url: hostPattern }, function(tabs) {
-        console.debug("Tab is reloaded, sending request for parsing");
-        console.debug("Found tabs:")
-        console.debug(tabs);
+        logger.debug("Tab is reloaded, sending request for parsing");
+        logger.debug("Found tabs:")
+        logger.debug(tabs);
         if (!tabs || !tabs.length) {
-            console.info(getNoTabsFoundMessage());
+            logger.info(getNoTabsFoundMessage());
             return;
         }
         for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
             chrome.tabs.sendMessage(tabs[i].id, {"msg": "getEntries"}, function(response) {
-                console.debug("Got response from content script");
-                console.debug("Got new entries from content script: "); 
-                console.debug(response);
+                logger.debug("Got response from content script");
+                logger.debug("Got new entries from content script: "); 
+                logger.debug(response);
                 if (!response) { 
-                    console.info("No response, returning");
+                    logger.info("No response, returning");
                     return; 
                 }
                 const data = response.data;
                 if (!data || !data.length) {
-                    console.info("No result from parser, returning.")
+                    logger.info("No result from parser, returning.")
                 }
                 // Got entries list in json format, checking if there are any new entries 
                 const newEntries = getUniqueEntries(applicationSettings.allProcessed, data);
 
                 if (!newEntries || !newEntries.length) { 
-                    console.debug("No new entries, returning");
+                    logger.debug("No new entries, returning");
                     return; 
                 }
                 processNewEntries(newEntries);
@@ -261,17 +265,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 chrome.runtime.onInstalled.addListener(details => {
-    console.info("Extension install background script onInstalled");
+    logger.info("Extension install background script onInstalled");
     loadSettingsAndRun(initiatePageCheck); 
 });
 
 chrome.runtime.onStartup.addListener(details => {
-    console.info("Extension startup background script onStartup");
+    logger.info("Extension startup background script onStartup");
     loadSettingsAndRun(initiatePageCheck); 
 });
 
 chrome.management.onEnabled.addListener(details => {
-    console.info("Extension startup background script onEnabled");
+    logger.info("Extension startup background script onEnabled");
     loadSettingsAndRun(initiatePageCheck); 
 });
 
@@ -285,7 +289,7 @@ function pageReloadHandler() {
 }
 
 chrome.alarms.onAlarm.addListener(alarm => {
-    console.debug("Woke up, starting check. Alarm: " + JSON.stringify(alarm));
+    logger.debug("Woke up, starting check. Alarm: " + JSON.stringify(alarm));
     if (alarm.name === PAGE_CHECK) {
         loadSettingsAndRun(initiatePageCheck);
     }
