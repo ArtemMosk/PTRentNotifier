@@ -9,6 +9,7 @@ import SenderFactory from '/src/sender.js';
 const IDEALISTA_KEY = "idealista";
 const OLX_KEY = "olx";
 const FB_KEY = "fb";
+const CAROUSELL_KEY = "carousell";
 
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
@@ -16,7 +17,8 @@ const PAGE_RELOADED = "pageReload";
 const hostPatterns = [
     {key: IDEALISTA_KEY, urlPattern: "*://*.idealista.pt/*"},
     {key: OLX_KEY, urlPattern: "*://*.olx.pt/*"}, 
-    {key: FB_KEY, urlPattern: "*://*.facebook.com/*"}
+    {key: FB_KEY, urlPattern: "*://*.facebook.com/*"},
+    {key: CAROUSELL_KEY, urlPattern: "*://*.carousell.sg/*"}
 ];
 
 let isDebug = false;
@@ -39,6 +41,7 @@ function loadSettingsAndRun(toRun) {
         isSendIfttt: false,
         isProcessIdealista: true,
         isProcessFb: true,
+        isProcessCarousell: false,
         isProcessOlx: true,
       }, function(items) {
           applicationSettings = items;
@@ -105,9 +108,9 @@ function getUniqueEntries(allProcessed, newEntries) {
     }
     allProcessed = clearProcessed(allProcessed, 10)
     
-    //Consider listing as old if it is older than check interval * 1.5.
+    //Consider listing as old if it is older than check interval * 1.7.
     //In such case entry did not appear in last result but for some reason present here. Probably ad listings are popping up, not interested.
-    const tooOldTreshold = new Date(Date.now() - (applicationSettings.checkPeriod * 60 * 1000) * 1.5).valueOf();
+    const tooOldTreshold = new Date(Date.now() - (applicationSettings.checkPeriod * 60 * 1000) * 1.7).valueOf();
     for (let i = 0; i < newEntries.length; i++) {
         let entry = newEntries[i];
            
@@ -169,7 +172,10 @@ function entriesParseRequest() {
             logger.debug("FB parsing turned off in settings, skipping.")
             continue;
         }
-
+        if (!as.isProcessCarousell && key === CAROUSELL_KEY) {
+            logger.debug("Carousell parsing turned off in settings, skipping.")
+            continue;
+        }
         let urlPattern = hostPatterns[i].urlPattern;
         patternsToCheck.push(urlPattern);
         chrome.tabs.query({ url: urlPattern }, function(tabs) {
@@ -203,7 +209,7 @@ function buildStrFromJson(entry, separator) {
             }
             
         }
-        result += jsonLine + ": " + toAdd + separator;
+        result += jsonLine + ":%20" + toAdd + separator;
     }
     return result
 }

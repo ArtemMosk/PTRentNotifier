@@ -21,6 +21,7 @@ function saveOptions() {
   const isProcessIdealista = document.getElementById('isProcessIdealista').checked;
   const isProcessOlx = document.getElementById('isProcessOlx').checked;
   const isProcessFb = document.getElementById('isProcessFb').checked;
+  const isProcessCarousell = document.getElementById('isProcessCarousell').checked;
 
   chrome.storage.sync.set({
     telegramId: telegramId,
@@ -37,6 +38,7 @@ function saveOptions() {
     iftttEventName: iftttEventName,
     iftttKey: iftttKey,
     isProcessIdealista: isProcessIdealista,
+    isProcessCarousell: isProcessCarousell,
     isProcessFb: isProcessFb,
     isProcessOlx: isProcessOlx
   }, function() {
@@ -76,7 +78,8 @@ function restoreOptions() {
     iftttKey: "",
     isProcessIdealista: true,
     isProcessOlx: true,
-    isProcessFb: true
+    isProcessFb: true,
+    isProcessCarousell: true
   }, function(items) {
     document.getElementById('telegramId').value = items.telegramId;
     document.getElementById('telegramGroupId').value = items.telegramGroupId;
@@ -92,6 +95,7 @@ function restoreOptions() {
     document.getElementById('isProcessIdealista').checked = items.isProcessIdealista;
     document.getElementById('isProcessOlx').checked = items.isProcessOlx;
     document.getElementById('isProcessFb').checked = items.isProcessFb;
+    document.getElementById('isProcessCarousell').checked = items.isProcessCarousell;
 
     document.getElementById('iftttEventName').value = items.iftttEventName;
     document.getElementById('iftttKey').value = items.iftttKey;
