@@ -3,5 +3,8 @@
         "parse",
         "request",
         "upwork"
-    ]
+    ],
+    "files.associations": {
+        "*.yaml": "home-assistant"
+    }
 }

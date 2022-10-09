@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "scrap-infra.fullname" . }}
+  labels:
+    {{- include "scrap-infra.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "scrap-infra.fullname" . }} 
+  ports:
+    - port: {{ .Values.service.webport }}
+      targetPort: {{ .Values.service.webport }}
+      protocol: TCP
+      name: web
+    - name: node
+      port: {{ .Values.service.nodeport }}
+      targetPort: {{ .Values.service.nodeport }}
+  selector:
+    {{- include "scrap-infra.selectorLabels" . | nindent 4 }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: selenium-hub
+  labels:
+    name: selenium-hub
+spec:
+  selector:
+    app: selenium-hub
+  ports:
+    - name: web
+      protocol: TCP
+      port: 4444
+      targetPort: 4444
+    - name: node
+      protocol: TCP
+      port: 5555
+      targetPort: 5555
