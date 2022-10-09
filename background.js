@@ -9,6 +9,7 @@ import SenderFactory from '/src/sender.js';
 const IDEALISTA_KEY = "idealista";
 const OLX_KEY = "olx";
 const FB_KEY = "fb";
+const CAROUSELL_KEY = "carousell";
 
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
@@ -16,7 +17,8 @@ const PAGE_RELOADED = "pageReload";
 const hostPatterns = [
     {key: IDEALISTA_KEY, urlPattern: "*://*.idealista.pt/*"},
     {key: OLX_KEY, urlPattern: "*://*.olx.pt/*"}, 
-    {key: FB_KEY, urlPattern: "*://*.facebook.com/*"}
+    {key: FB_KEY, urlPattern: "*://*.facebook.com/*"},
+    {key: CAROUSELL_KEY, urlPattern: "*://*.carousell.sg/*"}
 ];
 
 let isDebug = false;
@@ -39,6 +41,7 @@ function loadSettingsAndRun(toRun) {
         isSendIfttt: false,
         isProcessIdealista: true,
         isProcessFb: true,
+        isProcessCarousell: false,
         isProcessOlx: true,
       }, function(items) {
           applicationSettings = items;
@@ -169,7 +172,10 @@ function entriesParseRequest() {
             logger.debug("FB parsing turned off in settings, skipping.")
             continue;
         }
-
+        if (!as.isProcessCarousell && key === CAROUSELL_KEY) {
+            logger.debug("Carousell parsing turned off in settings, skipping.")
+            continue;
+        }
         let urlPattern = hostPatterns[i].urlPattern;
         patternsToCheck.push(urlPattern);
         chrome.tabs.query({ url: urlPattern }, function(tabs) {
@@ -203,7 +209,7 @@ function buildStrFromJson(entry, separator) {
             }
             
         }
-        result += jsonLine + ": " + toAdd + separator;
+        result += jsonLine + ":%20" + toAdd + separator;
     }
     return result
 }
