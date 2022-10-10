@@ -1,4 +1,3 @@
-import {settings} from './settings.js'
 
 class Sender {
     constructor(applicationSettings) {

@@ -4,68 +4,60 @@ const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes
 
 logger.debug("Entering background script")
 import SenderFactory from '/src/sender.js';
-
-
-const IDEALISTA_KEY = "idealista";
-const OLX_KEY = "olx";
-const FB_KEY = "fb";
-const CAROUSELL_KEY = "carousell";
+import settings from '/src/settings.js';
+import settingsHelper from '/src/settingsHelper.js';
 
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
 
-const hostPatterns = [
-    {key: IDEALISTA_KEY, urlPattern: "*://*.idealista.pt/*"},
-    {key: OLX_KEY, urlPattern: "*://*.olx.pt/*"}, 
-    {key: FB_KEY, urlPattern: "*://*.facebook.com/*"},
-    {key: CAROUSELL_KEY, urlPattern: "*://*.carousell.sg/*"}
-];
+const manifest = chrome.runtime.getManifest();
+const contentScripts = manifest['content_scripts'];
+const globalParams = settings.globalParams;
 
 let isDebug = false;
 
-let applicationSettings = {}
+function formParsersSettings() {
+    const ps = [];
+    contentScripts.forEach(contentScript => {
+        let match = contentScript.matches[0];
+        ps.push(
+            {
+                'name': settingsHelper.purifyMatchToName(match),
+                'match': match, 
+                "parse": contentScript.parse_by_default
+            }
+        );
+    });
+    return ps;
+}
 
 function loadSettingsAndRun(toRun) {
-    chrome.storage.sync.get({
-        telegramId: "",
-        telegramGroupId: "",
-        isSendMessageTelegram: false,
-        slackWebhookUrl: "",
-        slackMentionUsername: "",
-        isSendMessageSlack: false,
-        checkPeriod: "10",
-        numberOfTabsToCheck: "1",
-        isShowNotifications: true,
-        iftttEventName: "",
-        iftttKey: "",
-        isSendIfttt: false,
-        isProcessIdealista: true,
-        isProcessFb: true,
-        isProcessCarousell: false,
-        isProcessOlx: true,
-      }, function(items) {
-          applicationSettings = items;
+    globalParams.parsersSettings = formParsersSettings();
+
+    chrome.storage.sync.get(globalParams, function(items) {
+          let applicationSettings = items;
           logger.debug("Settings loaded: ");
           logger.debug(applicationSettings);
           chrome.storage.local.get({allProcessed: {}}, items => {
               logger.debug("Loaded processed items: ");
               logger.debug(items);
               applicationSettings.allProcessed = items.allProcessed;
-              toRun();
+              toRun(applicationSettings);
           }); 
 
       });
 }
 
-function initiatePageCheck() {
+function initiatePageCheck(applicationSettings) {
     const cp = applicationSettings.checkPeriod;
     let intCp = 10;
     if (typeof cp === 'string' || cp instanceof String) {
         intCp = parseInt(cp);
     }
     chrome.alarms.create(PAGE_CHECK, {delayInMinutes: intCp});
-    entriesParseRequest();
+    entriesParseRequest(applicationSettings);
 }
+
 //Adds entity to processed list and sets current timestamp to clear later
 function addProcessed(entityList, entity) {
     entityList[entity] = new Date().getTime();
@@ -98,7 +90,7 @@ function clearProcessed(entityList, hours) {
     return result;
 }
 
-function getUniqueEntries(allProcessed, newEntries) {
+function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
     let result = [];
     if (!Object.keys(allProcessed).length) {
         newEntries.forEach(item => addProcessed(allProcessed, item.url));
@@ -147,54 +139,34 @@ function getUniqueEntries(allProcessed, newEntries) {
     return result;
 }
 
-function getNoTabsFoundMessage() {
+function getNoTabsFoundMessage(applicationSettings) {
     return "No tabs found to be parsed, returning. Will recheck in " + applicationSettings.checkPeriod + "minutes.";
 }
 
-function entriesParseRequest() {
+function entriesParseRequest(applicationSettings) {
     
     logger.debug("Entered entriesParseRequest");
     chrome.alarms.create(PAGE_RELOADED, {delayInMinutes: 1});
-    let patternsToCheck = [];
-    for (let i = 0; i < hostPatterns.length; i++) {
-        let key = hostPatterns[i].key;
-        let as = applicationSettings;
+    let as = applicationSettings;
 
-        if (!as.isProcessOlx && key === OLX_KEY) {
-            logger.debug("OLX parsing turned off in settings, skipping.")
-            continue;
+    as.parsersSettings.forEach(contentScript => {
+        const match = contentScript.match;
+        if (!contentScript.parse) {
+            logger.debug(match + " parsing turned off in settings, skipping.")
+            return;
         }
-        if (!as.isProcessIdealista && key === IDEALISTA_KEY) {
-            logger.debug("Idealista parsing turned off in settings, skipping.")
-            continue;
-        }
-        if (!as.isProcessFb && key === FB_KEY) {
-            logger.debug("FB parsing turned off in settings, skipping.")
-            continue;
-        }
-        if (!as.isProcessCarousell && key === CAROUSELL_KEY) {
-            logger.debug("Carousell parsing turned off in settings, skipping.")
-            continue;
-        }
-        let urlPattern = hostPatterns[i].urlPattern;
-        patternsToCheck.push(urlPattern);
-        chrome.tabs.query({ url: urlPattern }, function(tabs) {
+        chrome.tabs.query({ url: match }, function(tabs) {
             logger.debug("Before reloading tab");
             if (!tabs || !tabs.length) {
-                logger.info(getNoTabsFoundMessage());
+                logger.info(getNoTabsFoundMessage(as));
                 return;
             }
             
-            for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+            for (let i = 0; (i < as.numberOfTabsToCheck && i < tabs.length); i++) {
                 chrome.tabs.reload(tabs[i].id, {});
             }
         });
-    }
-    chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
-        let tmp = settings.hostPatternsToProcess.concat(patternsToCheck);
-        chrome.storage.sync.set({hostPatternsToProcess: tmp}); 
     });
-
 }
 
 function buildStrFromJson(entry, separator) {
@@ -214,7 +186,7 @@ function buildStrFromJson(entry, separator) {
     return result
 }
 
-function processNewEntries(entries) {
+function processNewEntries(applicationSettings, entries) {
     const sender = (new SenderFactory).getSender(applicationSettings);
 
     entries.forEach(entry => {
@@ -225,7 +197,7 @@ function processNewEntries(entries) {
     });   
 }
 
-function requestEntriesList(hostPattern) {
+function requestEntriesList(applicationSettings, hostPattern) {
     chrome.tabs.query({ url: hostPattern }, function(tabs) {
         logger.debug("Tab is reloaded, sending request for parsing");
         logger.debug("Found tabs:")
@@ -248,13 +220,13 @@ function requestEntriesList(hostPattern) {
                     logger.info("No result from parser, returning.")
                 }
                 // Got entries list in json format, checking if there are any new entries 
-                const newEntries = getUniqueEntries(applicationSettings.allProcessed, data);
+                const newEntries = getUniqueEntries(applicationSettings, applicationSettings.allProcessed, data);
 
                 if (!newEntries || !newEntries.length) { 
                     logger.debug("No new entries, returning");
                     return; 
                 }
-                processNewEntries(newEntries);
+                processNewEntries(applicationSettings, newEntries);
             });
         }
     });
@@ -285,12 +257,10 @@ chrome.management.onEnabled.addListener(details => {
     loadSettingsAndRun(initiatePageCheck); 
 });
 
-function pageReloadHandler() {
-    chrome.storage.sync.get({hostPatternsToProcess: []}, settings => {
-        for (let i = 0; i < settings.hostPatternsToProcess.length; i++) {
-            requestEntriesList(settings.hostPatternsToProcess[i]);
-        }
-        chrome.storage.sync.set({hostPatternsToProcess: []});
+function pageReloadHandler(applicationSettings) {
+    applicationSettings.parsersSettings.forEach(contentScript => {
+        if (!contentScript.parse) return;
+        requestEntriesList(applicationSettings, contentScript.match);
     });
 }
 

@@ -26,7 +26,8 @@
         ],
         "js": [
             "src/parsers/parserIdealista.js"
-        ]
+        ],
+        "parse_by_default": true
     },
     {
       "matches": [
@@ -34,7 +35,8 @@
       ],
       "js": [
           "src/parsers/parserCarousell.js"
-      ]
+      ],
+      "parse_by_default": false
     },
     {
       "matches": [
@@ -42,7 +44,8 @@
       ],
       "js": [
           "src/parsers/parserOlx.js"
-      ]
+      ],
+      "parse_by_default": true
     },
     {
       "matches": [
@@ -50,7 +53,8 @@
       ],
       "js": [
           "src/parsers/parserFb.js"
-      ]
+      ],
+      "parse_by_default": true
     }
   ]
 }
