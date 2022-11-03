@@ -24,7 +24,8 @@ function formParsersSettings() {
             {
                 'name': settingsHelper.purifyMatchToName(match),
                 'match': match, 
-                "parse": contentScript.parse_by_default
+                "parse": contentScript.parse_by_default,
+                "visible": contentScript.visible
             }
         );
     });

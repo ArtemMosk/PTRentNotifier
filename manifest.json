@@ -27,7 +27,8 @@
         "js": [
             "src/parsers/parserUpwork.js"
         ],
-        "parse_by_default": true
+        "parse_by_default": false,
+        "visible": false 
     },
     {
         "matches": [
@@ -36,7 +37,8 @@
         "js": [
             "src/parsers/parserIdealista.js"
         ],
-        "parse_by_default": true
+        "parse_by_default": true,
+        "visible": true
     },
     {
       "matches": [
@@ -45,7 +47,8 @@
       "js": [
           "src/parsers/parserCarousell.js"
       ],
-      "parse_by_default": false
+      "parse_by_default": false,
+      "visible": true
     },
     {
       "matches": [
@@ -54,7 +57,8 @@
       "js": [
           "src/parsers/parserOlx.js"
       ],
-      "parse_by_default": true
+      "parse_by_default": true,
+      "visible": true
     },
     {
       "matches": [
@@ -63,7 +67,8 @@
       "js": [
           "src/parsers/parserFb.js"
       ],
-      "parse_by_default": true
+      "parse_by_default": true,
+      "visible": true
     }
   ]
 }

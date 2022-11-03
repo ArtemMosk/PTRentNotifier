@@ -82,13 +82,21 @@ function restoreOptions() {
 
   contentScripts.forEach(contentScript => {
       let match = contentScript.matches[0];
+      const name = settingsHelper.purifyMatchToName(match);
       ps.push(
           {
-              'name': settingsHelper.purifyMatchToName(match),
+              'name': name,
               'match': match, 
               "parse": contentScript.parse_by_default
           }
       );
+      let e = document.getElementById("label" + name);
+      if (contentScript.visible === 'true' || contentScript.visible === true) {
+        e.style.visibility = 'visible';
+      } else {
+        e.style.visibility = 'hidden';
+        e.style.display = 'none';
+      }
   });
 
   chrome.storage.sync.get(globalParams, function(items) {
