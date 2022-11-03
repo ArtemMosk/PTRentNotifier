@@ -5,6 +5,7 @@ let settings = {
         "isSendMessageTelegram": false,
         "slackWebhookUrl": "",
         "slackMentionUsername": "",
+        "slackChannelName": "",
         "isSendMessageSlack": false,
         "checkPeriod": "10",
         "numberOfTabsToCheck": "1",
