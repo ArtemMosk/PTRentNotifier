@@ -87,7 +87,7 @@ class Sender {
         const slackMentionUsername = smu;
 
         console.debug("Sending message " + url);
-        let escMessage = escapeSpecialChars(message);
+        let escMessage = this.escapeSpecialChars(message);
 
         fetch(url, {
             method: 'POST',
