@@ -22,6 +22,15 @@
   "content_scripts": [
     {
         "matches": [
+          "*://*.upwork.com/*"
+        ],
+        "js": [
+            "src/parsers/parserUpwork.js"
+        ],
+        "parse_by_default": true
+    },
+    {
+        "matches": [
           "*://*.idealista.pt/*"
         ],
         "js": [
