@@ -5,11 +5,11 @@ const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes
 logger.debug("Entering background script")
 import SenderFactory from '/src/sender.js';
 import settings from '/src/settings.js';
+import templates from '/src/templates.js';
 import settingsHelper from '/src/settingsHelper.js';
-
+import mustache from '/src/vendor/lib/mustache.js'
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
-
 const manifest = chrome.runtime.getManifest();
 const contentScripts = manifest['content_scripts'];
 const globalParams = settings.globalParams;
@@ -34,6 +34,7 @@ function formParsersSettings() {
 
 function loadSettingsAndRun(toRun) {
     globalParams.parsersSettings = formParsersSettings();
+
 
     chrome.storage.sync.get(globalParams, function(items) {
           let applicationSettings = items;
@@ -194,7 +195,12 @@ function processNewEntries(applicationSettings, entries) {
         sender.sendMessageIfttt(entry);
         sender.sendMessageTelegram(buildStrFromJson(entry, "%0A", "%20"), false);
         sender.sendMessageNotification(buildStrFromJson(entry, "\n", " "));
-        sender.sendMessageSlack(buildStrFromJson(entry, "\n", " "));
+        if (entry.parser == "upw") {
+            var message = mustache.render(templates.slackTemplate, entry);
+            sender.sendMessageSlack(message);
+        } else {
+            sender.sendMessageSlack(buildStrFromJson(entry, "\n", " "));
+        }
     });   
 }
 
@@ -245,7 +251,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(details => {
     logger.info("Extension install background script onInstalled");
+
     loadSettingsAndRun(initiatePageCheck); 
+});
+
+self.addEventListener('install', () => {
+    logger.info("On install");
 });
 
 chrome.runtime.onStartup.addListener(details => {

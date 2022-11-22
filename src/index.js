@@ -121,11 +121,15 @@ function restoreOptions() {
 }
 
 document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click',
-    saveOptions);
+
+const anyInput = Array.from(document.getElementsByTagName('input'));
+anyInput.forEach(input => {
+  input.addEventListener('change', (event) => {
+    saveOptions();
+  });
+});
 
 function testTelegramCaller() {
-  saveOptions();
   sendMessageToBackgroundScript("testTelegram");
   return false;
 }

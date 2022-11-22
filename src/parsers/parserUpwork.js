@@ -39,9 +39,10 @@ function extractJobs() {
         const resultJob = {url: "https://upwork.com" + jobUrl, title: jobTitle};
 
         let details = job.querySelectorAll("[data-test='JobTileFeatures'")[0];
+        resultJob.parser = "upw";
         resultJob.jobType = getTextByDataTest(details, "job-type");
         resultJob.contractorTier = getTextByDataTest(details, "contractor-tier");
-        resultJob.budget = getTextByDataTest(details, "budget");
+        resultJob.budget = getTextByDataTest(details, "budget").trim();
         resultJob.duration = getTextByDataTest(details, "duration");
         resultJob.postedOn = getTextByDataTest(details, "posted-on");
         resultJob.postedTimestamp = getPostedTimestamp(resultJob.postedOn)
