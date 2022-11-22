@@ -170,7 +170,7 @@ function entriesParseRequest(applicationSettings) {
     });
 }
 
-function buildStrFromJson(entry, separator) {
+function buildStrFromJson(entry, separator, spaceSymbol) {
     let result = "";
     for (const jsonLine in entry) {
         let toAdd = entry[jsonLine];
@@ -182,7 +182,7 @@ function buildStrFromJson(entry, separator) {
             }
             
         }
-        result += jsonLine + ":%20" + toAdd + separator;
+        result += jsonLine + ":" + spaceSymbol + toAdd + separator;
     }
     return result
 }
@@ -192,9 +192,9 @@ function processNewEntries(applicationSettings, entries) {
 
     entries.forEach(entry => {
         sender.sendMessageIfttt(entry);
-        sender.sendMessageTelegram(buildStrFromJson(entry, "%0A"), false);
-        sender.sendMessageNotification(buildStrFromJson(entry, "\n"));
-        sender.sendMessageSlack(buildStrFromJson(entry, "\n"));
+        sender.sendMessageTelegram(buildStrFromJson(entry, "%0A", "%20"), false);
+        sender.sendMessageNotification(buildStrFromJson(entry, "\n", " "));
+        sender.sendMessageSlack(buildStrFromJson(entry, "\n", " "));
     });   
 }
 

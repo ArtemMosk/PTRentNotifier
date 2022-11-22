@@ -87,11 +87,11 @@ class Sender {
         const slackMentionUsername = smu;
 
         console.debug("Sending message " + url);
-        let escMessage = this.escapeSpecialChars(message);
-
+        console.debug("Sending message to slack:");
+        console.debug(message);
         fetch(url, {
             method: 'POST',
-            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + slackMentionUsername + escMessage +"\", \"icon_emoji\": \":ghost:\"}"
+            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + slackMentionUsername + message +"\", \"icon_emoji\": \":ghost:\"}"
         }).catch(error => {
             console.warn("Can't send message to slack. Please check webhook URL");
             //console.debug(error);
