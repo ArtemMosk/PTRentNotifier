@@ -26,6 +26,17 @@ function getPostedTimestamp(txtDateTime) {
     return result;
 }
 
+function getQuery() {
+    const regex = /.+?\/search\/\?(.+)/;
+    const found = window.location.href.match(regex);
+    const result = found[1];
+    return result;
+}
+
+function getStrippedTitle() {
+    return document.title.replaceAll("Freelance ", "").replaceAll(" Jobs - Upwork","");
+}
+
 function extractJobs() {
     const d = document.all[0];
     const jobList = d.querySelectorAll("[data-test='job-tile-list'] .up-card-section");
@@ -40,7 +51,8 @@ function extractJobs() {
 
         let details = job.querySelectorAll("[data-test='JobTileFeatures'")[0];
         resultJob.parser = "upw";
-        resultJob.query = window.location.pathname.replace("/nx/jobs/search/", "");
+        resultJob.query = getQuery();
+        resultJob.pageTitle = getStrippedTitle();
         resultJob.jobType = getTextByDataTest(details, "job-type");
         resultJob.contractorTier = getTextByDataTest(details, "contractor-tier");
         resultJob.budget = getTextByDataTest(details, "budget").trim();
