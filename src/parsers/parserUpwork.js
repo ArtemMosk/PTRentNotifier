@@ -40,6 +40,7 @@ function extractJobs() {
 
         let details = job.querySelectorAll("[data-test='JobTileFeatures'")[0];
         resultJob.parser = "upw";
+        resultJob.query = window.location.pathname.replace("/nx/jobs/search/", "");
         resultJob.jobType = getTextByDataTest(details, "job-type");
         resultJob.contractorTier = getTextByDataTest(details, "contractor-tier");
         resultJob.budget = getTextByDataTest(details, "budget").trim();
