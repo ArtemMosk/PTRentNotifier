@@ -20,9 +20,10 @@ function formParsersSettings() {
     const ps = [];
     contentScripts.forEach(contentScript => {
         let match = contentScript.matches[0];
+        const purifiedName = settingsHelper.purifyMatchToName(match);
         ps.push(
             {
-                'name': settingsHelper.purifyMatchToName(match),
+                'name': purifiedName,
                 'match': match, 
                 "parse": contentScript.parse_by_default,
                 "visible": contentScript.visible
@@ -35,6 +36,11 @@ function formParsersSettings() {
 function loadSettingsAndRun(toRun) {
     globalParams.parsersSettings = formParsersSettings();
 
+    globalParams.parsersSettings.map(cs => {
+        templates.loadTemplateFromFile(cs.name);
+    });
+    console.debug("Loaded templates:");
+    console.debug(templates.fileTemplates);
 
     chrome.storage.sync.get(globalParams, function(items) {
           let applicationSettings = items;
