@@ -10,9 +10,9 @@ function getTextFromDomElem(parentElement, selector) {
     return elem.textContent || elem.innerText
 }
 
-function getPostedTimestamp(txtDateTime) {
+function getPostedTimestamp(txtDateTime, timeSearchRegex) {
     result = -1;
-    const regex = /Hoje às (\d\d):(\d\d)/;
+    const regex = timeSearchRegex;
     const found = txtDateTime.match(regex);
     if (found) {
         let d = new Date();
@@ -40,7 +40,10 @@ function extractEntries() {
 
         resultEntry.price = getTextFromDomElem(listingItem, "[data-testid='ad-price']");
         resultEntry.details = getTextFromDomElem(listingItem, "[data-testid='location-date']");
-        resultEntry.postedTimestamp = getPostedTimestamp(resultEntry.details);
+        resultEntry.postedTimestamp = getPostedTimestamp(resultEntry.details, /Hoje às (\d\d):(\d\d)/);
+        if (resultEntry.postedTimestamp == -1) {
+            resultEntry.postedTimestamp = getPostedTimestamp(resultEntry.details, /Today at (\d\d):(\d\d)/);
+        }
         result.push(resultEntry);
     }
     return result;

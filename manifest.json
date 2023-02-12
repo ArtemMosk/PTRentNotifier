@@ -32,13 +32,23 @@
     },
     {
         "matches": [
+          "*://*.imovirtual.com/*"
+        ],
+        "js": [
+            "src/parsers/parserImovirtual.js"
+        ],
+        "parse_by_default": true,
+        "visible": true 
+    },
+    {
+        "matches": [
           "*://*.idealista.pt/*"
         ],
         "js": [
             "src/parsers/parserIdealista.js"
         ],
         "parse_by_default": true,
-        "visible": true
+        "visible": true 
     },
     {
       "matches": [
@@ -48,7 +58,7 @@
           "src/parsers/parserCarousell.js"
       ],
       "parse_by_default": false,
-      "visible": true
+      "visible": false
     },
     {
       "matches": [

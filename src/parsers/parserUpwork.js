@@ -50,7 +50,7 @@ function extractJobs() {
         const resultJob = {url: "https://upwork.com" + jobUrl, title: jobTitle};
 
         let details = job.querySelectorAll("[data-test='JobTileFeatures'")[0];
-        resultJob.parser = "upw";
+        resultJob.messageTemplate = ".upwork.com";
         resultJob.query = getQuery();
         resultJob.pageTitle = getStrippedTitle();
         resultJob.jobType = getTextByDataTest(details, "job-type");

@@ -3,18 +3,18 @@ import LogWrapper from '/src/logWrapper.js';
 const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes.REMOTE_CONSOLE);
 
 logger.debug("Entering background script")
-import SenderFactory from '/src/sender.js';
-import settings from '/src/settings.js';
-import templates from '/src/templates.js';
+import settings from './src/settings.js';
+import templates from './src/templates.js';
 import settingsHelper from '/src/settingsHelper.js';
-import mustache from '/src/vendor/lib/mustache.js'
+import JobMessageSenderFactory from './src/jobMessageSender.js';
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
 const manifest = chrome.runtime.getManifest();
 const contentScripts = manifest['content_scripts'];
 const globalParams = settings.globalParams;
+const constants = settings.const;
 
-let isDebug = false;
+let isDebug = settings.globalParams.isDebug;
 
 function formParsersSettings() {
     const ps = [];
@@ -36,11 +36,10 @@ function formParsersSettings() {
 function loadSettingsAndRun(toRun) {
     globalParams.parsersSettings = formParsersSettings();
 
-    globalParams.parsersSettings.map(cs => {
-        templates.loadTemplateFromFile(cs.name);
-    });
-    console.debug("Loaded templates:");
-    console.debug(templates.fileTemplates);
+    templates.loadSenderTemplates(globalParams.parsersSettings, constants.deliveryMethodNames);
+
+    logger.debug("Loaded templates:");
+    logger.debug(templates.fileTemplates);
 
     chrome.storage.sync.get(globalParams, function(items) {
           let applicationSettings = items;
@@ -110,13 +109,15 @@ function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
     
     //Consider listing as old if it is older than check interval * 1.7.
     //In such case entry did not appear in last result but for some reason present here. Probably ad listings are popping up, not interested.
-    const tooOldTreshold = new Date(Date.now() - (applicationSettings.checkPeriod * 60 * 1000) * 1.7).valueOf();
+    const tooOldTreshold = new Date(Date.now() - (applicationSettings.checkPeriod * 60 * 1000) * 1.8).valueOf();
     for (let i = 0; i < newEntries.length; i++) {
         let entry = newEntries[i];
            
         const t = entry.postedTimestamp;
         //Probably we just did not bother to parse time of older entries
-        if (isDebug) { result.push(entry); isDebug = false; }
+        if (isDebug && i == (newEntries.length - 1) && !result.length) { 
+            result.push(newEntries[0]); isDebug = false; 
+        }
         if (t === undefined || t === -1) {
             logger.debug(entry.url + " no posting time specified, skipping");
             continue;
@@ -152,7 +153,6 @@ function getNoTabsFoundMessage(applicationSettings) {
 }
 
 function entriesParseRequest(applicationSettings) {
-    
     logger.debug("Entered entriesParseRequest");
     chrome.alarms.create(PAGE_RELOADED, {delayInMinutes: 1});
     let as = applicationSettings;
@@ -171,42 +171,22 @@ function entriesParseRequest(applicationSettings) {
             }
             
             for (let i = 0; (i < as.numberOfTabsToCheck && i < tabs.length); i++) {
-                chrome.tabs.reload(tabs[i].id, {});
+                chrome.tabs.reload(tabs[i].id, {}, () => {
+                    setTimeout(() => {
+                        if (isDebug) {
+                            loadSettingsAndRun(pageReloadHandler);
+                        }
+                    }, 5000);
+                });
             }
         });
     });
 }
 
-function buildStrFromJson(entry, separator, spaceSymbol) {
-    let result = "";
-    for (const jsonLine in entry) {
-        let toAdd = entry[jsonLine];
-        if (jsonLine == "postedTimestamp") {
-            if (null === toAdd || undefined === toAdd || parseInt(toAdd) === NaN || parseInt(toAdd) == -1) {
-                toAdd = "N/A";
-            } else {
-                toAdd = new Date(toAdd)
-            }
-            
-        }
-        result += jsonLine + ":" + spaceSymbol + toAdd + separator;
-    }
-    return result
-}
-
 function processNewEntries(applicationSettings, entries) {
-    const sender = (new SenderFactory).getSender(applicationSettings);
-
+    const sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
     entries.forEach(entry => {
-        sender.sendMessageIfttt(entry);
-        sender.sendMessageTelegram(buildStrFromJson(entry, "%0A", "%20"), false);
-        sender.sendMessageNotification(buildStrFromJson(entry, "\n", " "));
-        if (entry.parser == "upw") {
-            var message = mustache.render(templates.slackTemplate, entry);
-            sender.sendMessageSlack(message);
-        } else {
-            sender.sendMessageSlack(buildStrFromJson(entry, "\n", " "));
-        }
+        sender.notifyOnJob(entry); 
     });   
 }
 
@@ -216,7 +196,7 @@ function requestEntriesList(applicationSettings, hostPattern) {
         logger.debug("Found tabs:")
         logger.debug(tabs);
         if (!tabs || !tabs.length) {
-            logger.info(getNoTabsFoundMessage());
+            logger.info(getNoTabsFoundMessage(applicationSettings));
             return;
         }
         for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
@@ -250,8 +230,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         loadSettingsAndRun(initiatePageCheck);
     }
     if (msg === 'testTelegram') {
-        const sender = (new SenderFactory()).getSender(applicationSettings);
-        sender.sendMessageTelegram("Паляниця", true);
+        loadSettingsAndRun((applicationSettings) => {
+            const sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
+            sender.sendMessageTelegram("Паляниця", true);
+        });
+    }
+    if (msg === 'forceRun') {
+        loadSettingsAndRun(pageReloadHandler);
     }
 });
 

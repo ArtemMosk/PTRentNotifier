@@ -12,8 +12,13 @@ let settings = {
         "isShowNotifications": true,
         "iftttEventName": "",
         "iftttKey": "",
-        "isSendIfttt": false
+        "isSendIfttt": false,
+        "isDebug": false,
       },
+    const: {
+      "deliveryMethodNames": ["slack", "telegram", "ifttt", "notification", "general"],
+      "noTemplate": "noTemplate",
+    }
 }
 
 export default settings;

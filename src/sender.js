@@ -1,33 +1,28 @@
 
 class Sender {
-    constructor(applicationSettings) {
-        this.applicationSettings = applicationSettings;
+    constructor() {
     }
 
-    sendMessageTelegram(message, forceSend) {
-        let as = this.applicationSettings;
-        if (!as.isSendMessageTelegram && !forceSend) {
-            console.debug("Telegram is turned off, skipping send");
-            return;
-        }
-        var token = as.telegramId;
-        var chat_id = as.telegramGroupId;
+    sendMessageTelegram(token, chat_id, message) {
         if (!token || !chat_id) {
             console.info("Telegram token or chat ID not specified, skipping sending to Telegram. ");
             return;
         }
-        var url = 'https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + message + '&parse_mode=html';
+        var url = 'https://api.telegram.org/bot' + token + '/sendMessage'
+        //?chat_id=' + chat_id + '&text=' + message + '&parse_mode=html';
         console.debug("Sending message " + url);
         
-        fetch(url);
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: '{"chat_id": "-1001891653474", "text": "' + message + '", "parse_mode" : "html", "disable_notification": false}',
+        }).catch(error => {
+            console.warn("Can't send message to Telegram. Please check settings");
+            console.debug(error);
+        });
     }
 
     sendMessageNotification(message) {
-        let as = this.applicationSettings;
-        if (!as.isShowNotifications) {
-            console.debug("Notifications are turned off, skipping popup");
-            return;
-        }
         chrome.notifications.create('', {
             title: "Оновлення фонової сторінки",
             message: message,
@@ -35,21 +30,9 @@ class Sender {
             type: 'basic'
         });
     }
-
-    sendMessageIfttt(messageJson) {
-        let as = this.applicationSettings;
-        if (!as.isSendIfttt) {
-            console.debug("IFTTT is turned off, skipping send");
-            return;
-        }
-
-        const key = as.iftttKey;
-        if (!key) {
-            console.info("IFTTT key is not specified, skipping send to IFTTT.");
-            return;
-        }
-
-        let url = "https://maker.ifttt.com/trigger/" + as.iftttEventName +"/json/with/key/" + key;
+    
+    sendMessageIfttt(iftttEventName, key, messageJson) {
+        let url = "https://maker.ifttt.com/trigger/" + iftttEventName +"/json/with/key/" + key;
         var formBody = [];
         for (var property in messageJson) {
             var encodedKey = encodeURIComponent(property);
@@ -65,61 +48,33 @@ class Sender {
             },
             body: formBody
         }).catch(error => {
-            console.warn("CORS raising error but IFTT should still receive message. If it does not check key and event name.");
+            console.warn("CORS raising error but IFTTT should still receive message. If it does not check key and event name.");
         });
     }
 
-    sendMessageSlack(message) {
-        let as = this.applicationSettings;
-        if (!as.isSendMessageSlack) {
-            console.debug("Slack is turned off, skipping send");
-            return;
-        }
+    sendMessageSlack(webhookUrl, slackMentionUsername, slackChannelName, message) {
+        const smu = slackMentionUsername ?  "<@" + slackMentionUsername.replace(/@/g, "") + ">" : ""
+        const channelName = "#" + slackChannelName.replace(/[#@]/g, "");
 
-        const url = as.slackWebhookUrl;
-        if (!url) {
-            console.info("Slack webhook url is not specified, skipping send to slack.");
-            return;
-        }
-        
-        const smu = as.slackMentionUsername ?  "<@" + as.slackMentionUsername.replace(/@/g, "") + ">" : ""
-        const channelName = "#" + as.slackChannelName.replace(/[#@]/g, "");
-        const slackMentionUsername = smu;
-
-        console.debug("Sending message " + url);
+        console.debug("Sending message " + webhookUrl);
         console.debug("Sending message to slack:");
         console.debug(message);
-        fetch(url, {
+        fetch(webhookUrl, {
             method: 'POST',
-            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + slackMentionUsername + " " + message +"\", \"icon_emoji\": \":ghost:\"}"
+            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + smu + " " + message +"\", \"icon_emoji\": \":ghost:\"}"
         }).catch(error => {
             console.warn("Can't send message to slack. Please check webhook URL");
             //console.debug(error);
         });
     }
-
-    escapeSpecialChars(str) {
-        return str.replace(/\\n/g, "\\n")
-                .replace(/\\'/g, "\\'")
-                .replace(/\\"/g, '\\"')
-                .replace(/\\&/g, "\\&")
-                .replace(/\\r/g, "\\r")
-                .replace(/\\t/g, "\\t")
-                .replace(/\\b/g, "\\b")
-                .replace(/"/g, "'")
-                .replace(/\\f/g, "\\f");
-    };
 }
 
 class SenderFactory {
     constructor() {
     }
 
-    getSender(applicationSettings) {
-        if (!applicationSettings) {
-            throw ("Trying to initialize message sender without providing application settings!"); 
-        }
-        return new Sender(applicationSettings);
+    getSender() {
+        return new Sender();
     }
 }
 

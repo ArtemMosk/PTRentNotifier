@@ -69,6 +69,16 @@ function saveOptions() {
   sendMessageToBackgroundScript("updateSettings");
 }
 
+function switchVisibility(e, shouldShow) {
+  if (shouldShow) {
+    e.style.visibility = 'visible';
+    e.style.display = "block";
+  } else {
+    e.style.visibility = 'hidden';
+    e.style.display = 'none';
+  }
+}
+
 function sendMessageToBackgroundScript(msg) {
   chrome.runtime.sendMessage(msg, response => {
     console.debug("Sent request to background script: " + msg);
@@ -80,6 +90,7 @@ function restoreOptions() {
   globalParams.parsersSettings = []
   let ps = globalParams.parsersSettings;
 
+  switchVisibility(document.getElementById("forceRun"), globalParams.isDebug);
   contentScripts.forEach(contentScript => {
       let match = contentScript.matches[0];
       const name = settingsHelper.purifyMatchToName(match);
@@ -91,12 +102,7 @@ function restoreOptions() {
           }
       );
       let e = document.getElementById("label" + name);
-      if (contentScript.visible === 'true' || contentScript.visible === true) {
-        e.style.visibility = 'visible';
-      } else {
-        e.style.visibility = 'hidden';
-        e.style.display = 'none';
-      }
+      switchVisibility(e, (contentScript.visible === 'true' || contentScript.visible === true));
   });
 
   chrome.storage.sync.get(globalParams, function(items) {
@@ -135,3 +141,11 @@ function testTelegramCaller() {
 }
 
 document.getElementById('testTelegram').addEventListener('click', testTelegramCaller);
+
+
+function forceRun() {
+  sendMessageToBackgroundScript("forceRun");
+  return false;
+}
+
+document.getElementById('forceRun').addEventListener('click', forceRun);

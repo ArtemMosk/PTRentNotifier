@@ -1,25 +1,44 @@
 let templates = {
-  slackTemplate: "\n<{{&url}}|{{title}}>\n:clock1: {{&duration}}{{^duration}}N/A{{/duration}}\n:money_with_wings: {{budget}}{{^budget}}N/A{{/budget}}  |  :briefcase: {{jobType}}  |  :level_slider: {{contractorTier}}\n_Tags:_ {{tags}}\n_Posted On:_ {{postedOn}}\n_Query_: {{&pageTitle}}",
   fileTemplates: {},
 
   templatesDir: "src/templates/",
   loadTemplatesFromList: function(templateFileNames) {
+    let result = []
     templateFileNames.forEach(fileName => {
-      this.loadTemplateFromFile(fileName);
-   });
+      result.push(this.loadTemplateFromFile(fileName));
+    });
+    return result;
   },
+
+  loadSenderTemplates: function(parsersSettings, deliveryMethodNames) {
+    parsersSettings.forEach(cs => {
+     deliveryMethodNames.forEach(deliveryMethod => {
+          if (this.fileTemplates[cs.name] && this.fileTemplates[cs.name][deliveryMethod]) {
+            return;
+          }
+          const loadedPromise = templates.loadTemplateFromFile(cs.name + "__" + deliveryMethod + "__");
+          loadedPromise.then(text => {
+            if (!this.fileTemplates[cs.name]) this.fileTemplates[cs.name] = {};
+            this.fileTemplates[cs.name][deliveryMethod] = text;
+          });
+      });
+    });
+  },
+
 //TODO need delivery channel separation and general template implementation!
-  loadTemplateFromFile:function(fileName) {
+  loadTemplateFromFile: async function(fileName) {
     let fullFileName = this.templatesDir + fileName;
     const ext = fullFileName.split('.').pop();
     if ("html" !== ext && "mustache" !== ext) { fullFileName = fullFileName + '.mustache'; }
 
-    fetch(chrome.runtime.getURL(fullFileName)).then(response => response.text()).then(text => {
-      this.fileTemplates[fileName] = text;
-    }).catch(error => {
+    try {
+      const response = await fetch(chrome.runtime.getURL(fullFileName));
+      const text = await response.text();
+      return text;
+    } catch (error) {
       console.warn("Can't load mustache template " + fullFileName);
       console.warn("Error " + error);
-    });
+    }
   }
 }
 

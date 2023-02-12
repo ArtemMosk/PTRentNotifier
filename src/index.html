@@ -13,6 +13,9 @@
     <form class="form">
         <h4>Загальні настройки</h4>
         <fieldset>
+          <button type="button" class="button" id="forceRun">
+            Форсувати перевірку сторінки (для тестування)
+          </button>
           <label for="checkPeriod">
             Період перевірки нових оголошень (хвилини)
             <input type="number" class="input" min="2" id="checkPeriod">
@@ -32,7 +35,10 @@
         </fieldset>
         <fieldset>
           <label for=".idealista.pt" id="label.idealista.pt">
-            <input type="checkbox" id=".idealista.pt" role="switch"> Слідкувати за Ідеаліста.
+            <input type="checkbox" id=".idealista.pt" role="switch"> Слідкувати за Ідеаліста
+          </label>
+          <label for=".imovirtual.com" id="label.imovirtual.com">
+            <input type="checkbox" id=".imovirtual.com" role="switch"> Слідкувати за Imovirtual
           </label>
           <label for=".olx.pt" id="label.olx.pt">
             <input type="checkbox" id=".olx.pt" role="switch"> Слідкувати за OLX
