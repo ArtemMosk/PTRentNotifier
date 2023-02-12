@@ -16,7 +16,7 @@ function extractEntries() {
 
         let entryUrl = title.getAttribute("href");
         let entryTitile = title.innerText || title.textContent
-        const resultEntry = {url: "https://imovirtual.com/" + entryUrl, title: entryTitile};
+        const resultEntry = {url: entryUrl, title: entryTitile};
 
         let info = entry.querySelectorAll(".params")[0];
         resultEntry.price = getTextFromDomElem(info, ".offer-item-price");
