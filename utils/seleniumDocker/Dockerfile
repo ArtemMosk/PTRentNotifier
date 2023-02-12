@@ -1,10 +1,14 @@
-FROM selenium/standalone-chrome:4.4.0-20220831
-
+FROM selenium/standalone-chrome:4.6.0-20221104
 
 ARG DEFULT_VNC_PASSWORD=someComplexPassword
+ARG CROME_RUNNER_SH_NAME=chrome-runner.sh
+
 USER root
-RUN apt-get update && apt-get install -y vim \
-    && rm -rf /var/lib/apt/lists/*  
+RUN apt-get update -y && apt-get install vim -y \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i "s/wait\s/\/home\/seluser\/PTRentNotifier\/utils\/seleniumDocker\/${CROME_RUNNER_SH_NAME} \&\nwait /g" /opt/bin/entry_point.sh 
+RUN cat /opt/bin/entry_point.sh  
 USER seluser
-    
+ADD ./PTRentNotifier/ /home/seluser/PTRentNotifier
 RUN x11vnc -storepasswd ${DEFULT_VNC_PASSWORD} /home/seluser/.vnc/passwd
