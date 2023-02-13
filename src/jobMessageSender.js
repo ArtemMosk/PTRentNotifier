@@ -74,6 +74,7 @@ class JobMessageSender {
         }
         this.sendTemplated(job);
         this.sendMessageIfttt(job);
+        this.sendMessageCustomHook(job);
     }
     
     sendMessageTelegram(message, forceSend) {
@@ -99,6 +100,21 @@ class JobMessageSender {
         }
         this.sender.sendMessageNotification(message);
     }
+
+    sendMessageCustomHook(messageJson) {
+        let as = this.applicationSettings;
+        if (!as.isSendCustomHook) {
+            console.debug("Custom hook is turned off, skipping send");
+            return;
+        }
+        const url = as.customHookUrl;
+        if (!url) {
+            console.info("URL for custom hook is not specified, skipping send.");
+            return;
+        }
+        this.sender.sendMessageCustomHook(url, messageJson);
+    }
+
 
     sendMessageIfttt(messageJson) {
         let as = this.applicationSettings;

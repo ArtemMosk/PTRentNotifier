@@ -4,6 +4,7 @@ let settings = {
         "telegramGroupId": "",
         "isSendMessageTelegram": false,
         "slackWebhookUrl": "",
+        "customHookUrl": "",
         "slackMentionUsername": "",
         "slackChannelName": "",
         "isSendMessageSlack": false,
@@ -13,6 +14,7 @@ let settings = {
         "iftttEventName": "",
         "iftttKey": "",
         "isSendIfttt": false,
+        "isSendCustomHook": false,
         "isDebug": false,
       },
     const: {
@@ -22,3 +24,4 @@ let settings = {
 }
 
 export default settings;
+

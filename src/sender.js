@@ -52,6 +52,19 @@ class Sender {
         });
     }
 
+    sendMessageCustomHook(webhookUrl, message) {
+        console.debug("Sending message " + webhookUrl);
+        console.debug("Sending message to custom hook:");
+        console.debug(message);
+        fetch(webhookUrl, {
+            method: 'POST',
+            body: JSON.stringify(message)
+        }).catch(error => {
+            console.warn("Can't send message to custom hook. Please check webhook URL");
+            //console.debug(error);
+        });
+    }
+
     sendMessageSlack(webhookUrl, slackMentionUsername, slackChannelName, message) {
         const smu = slackMentionUsername ?  "<@" + slackMentionUsername.replace(/@/g, "") + ">" : ""
         const channelName = "#" + slackChannelName.replace(/[#@]/g, "");

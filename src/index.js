@@ -14,6 +14,8 @@ function saveOptions() {
   const iftttKey = document.getElementById('iftttKey').value;
   const iftttEventName = document.getElementById('iftttEventName').value;
 
+  const customHookUrl = document.getElementById('customHookUrl').value;
+
   const slackWebhookUrl = document.getElementById('slackWebhookUrl').value;
   const slackMentionUsername = document.getElementById('slackMentionUsername').value;
   const slackChannelName = document.getElementById('slackChannelName').value;
@@ -23,6 +25,7 @@ function saveOptions() {
 
   const isShowNotifications = document.getElementById('isShowNotifications').checked;
   const isSendIfttt = document.getElementById('isSendIfttt').checked;
+  const isSendCustomHook = document.getElementById('isSendCustomHook').checked;
   const isSendMessageTelegram = document.getElementById('isSendMessageTelegram').checked;
   const isSendMessageSlack = document.getElementById('isSendMessageSlack').checked;
   const settingsJson = {
@@ -39,6 +42,8 @@ function saveOptions() {
     isSendIfttt: isSendIfttt,
     iftttEventName: iftttEventName,
     iftttKey: iftttKey,
+    isSendCustomHook: isSendCustomHook,
+    customHookUrl: customHookUrl,
   }
 
   settingsJson.parsersSettings = []
@@ -120,6 +125,11 @@ function restoreOptions() {
 
     document.getElementById('iftttEventName').value = items.iftttEventName;
     document.getElementById('iftttKey').value = items.iftttKey;
+
+    document.getElementById('isSendCustomHook').checked = items.isSendCustomHook;
+    document.getElementById('customHookUrl').value = items.customHookUrl;
+    
+
     items.parsersSettings.forEach(element => {
         document.getElementById(element.name).checked = element.parse
     });
