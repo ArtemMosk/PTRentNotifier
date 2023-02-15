@@ -51,6 +51,26 @@
         "visible": true 
     },
     {
+        "matches": [
+          "*://*.casa.sapo.pt/*"
+        ],
+        "js": [
+            "src/parsers/parserCasaSapo.js"
+        ],
+        "parse_by_default": true,
+        "visible": true 
+    },
+    {
+      "matches": [
+        "*://*.custojusto.pt/*"
+      ],
+      "js": [
+          "src/parsers/parserCustoJusto.js"
+      ],
+      "parse_by_default": true,
+      "visible": true 
+    },
+    {
       "matches": [
         "*://*.carousell.sg/*"
       ],
