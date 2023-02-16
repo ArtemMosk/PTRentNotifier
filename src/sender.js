@@ -15,7 +15,7 @@ class Sender {
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: '{"chat_id": "-1001891653474", "text": "' + message + '", "parse_mode" : "html", "disable_notification": false}',
+            body: '{"chat_id": "' + chat_id + '", "text": "' + message + '", "parse_mode" : "html", "disable_notification": false}',
         }).catch(error => {
             console.warn("Can't send message to Telegram. Please check settings");
             console.debug(error);
