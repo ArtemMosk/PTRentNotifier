@@ -105,7 +105,7 @@ function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
         saveProcessed(allProcessed);
         return result;
     }
-    allProcessed = clearProcessed(allProcessed, 10)
+    allProcessed = clearProcessed(allProcessed, 100)
     
     //Consider listing as old if it is older than check interval * 1.7.
     //In such case entry did not appear in last result but for some reason present here. Probably ad listings are popping up, not interested.
