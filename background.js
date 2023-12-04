@@ -26,6 +26,7 @@ function formParsersSettings() {
                 'name': purifiedName,
                 'match': match, 
                 "parse": contentScript.parse_by_default,
+                "trackSpecificChange": contentScript.track_specific_change, 
                 "visible": contentScript.visible
             }
         );
@@ -190,7 +191,7 @@ function processNewEntries(applicationSettings, entries) {
     });   
 }
 
-function requestEntriesList(applicationSettings, hostPattern) {
+function requestEntriesList(applicationSettings, hostPattern, trackSpecificChange) {
     chrome.tabs.query({ url: hostPattern }, function(tabs) {
         logger.debug("Tab is reloaded, sending request for parsing");
         logger.debug("Found tabs:")
@@ -200,6 +201,23 @@ function requestEntriesList(applicationSettings, hostPattern) {
             return;
         }
         for (let i = 0; (i < applicationSettings.numberOfTabsToCheck && i < tabs.length); i++) {
+            if (trackSpecificChange) {
+                chrome.tabs.sendMessage(tabs[i].id, {"msg": "trackChange"}, function(response) {
+                    logger.debug("Got response from content script");
+                    logger.debug(response);
+                    if (!response) { 
+                        logger.info("No response, returning");
+                        return; 
+                    }
+                    const data = response.data;
+                    if (!data || !data.length) {
+                        logger.info("No result from parser, returning.")
+                    }
+                    const sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
+                    sender.sendMessageTelegram(data, false);
+                });
+                continue
+            }
             chrome.tabs.sendMessage(tabs[i].id, {"msg": "getEntries"}, function(response) {
                 logger.debug("Got response from content script");
                 logger.debug("Got new entries from content script: "); 
@@ -263,7 +281,7 @@ chrome.management.onEnabled.addListener(details => {
 function pageReloadHandler(applicationSettings) {
     applicationSettings.parsersSettings.forEach(contentScript => {
         if (!contentScript.parse) return;
-        requestEntriesList(applicationSettings, contentScript.match);
+        requestEntriesList(applicationSettings, contentScript.match, contentScript.trackSpecificChange);
     });
 }
 
