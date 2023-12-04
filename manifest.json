@@ -92,17 +92,6 @@
     },
     {
       "matches": [
-        "*://*.arbitrum.foundation/*"
-      ],
-      "js": [
-          "src/parsers/parserArbitrum.js"
-      ],
-      "parse_by_default": true,
-      "track_specific_change": true,
-      "visible": true
-    },
-    {
-      "matches": [
         "*://*.facebook.com/*"
       ],
       "js": [

@@ -41,7 +41,7 @@ function extractEntries() {
         resultEntry.details = getTextFromDomElem(info, ".item-detail-char");
         const time = getTextFromDomElem(info, ".item-detail-char .txt-highlight-red")
         resultEntry.postedTimestamp = getPostedTimestamp(resultEntry.details);
-        
+        resultEntry.postedTimestamp = resultEntry.postedTimestamp === -1 ? (new Date()).valueOf() : resultEntry.postedTimestamp
         result.push(resultEntry);
     }
     return result;
