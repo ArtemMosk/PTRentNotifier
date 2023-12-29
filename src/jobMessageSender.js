@@ -72,6 +72,7 @@ class JobMessageSender {
         if (undefinedTemplate) {
             console.debug("No template. Sending default message");
         }
+        this.sendMessagedResultApi(job);
         this.sendTemplated(job);
         this.sendMessageIfttt(job);
         this.sendMessageCustomHook(job);
@@ -99,6 +100,31 @@ class JobMessageSender {
             return;
         }
         this.sender.sendMessageNotification(message);
+    }
+
+    sendHeartBeat(messageJson) {
+        let as = this.applicationSettings;
+        if (!as.isSendHeartBeat) {
+            console.debug("Heartbeat sending is turned off, skipping send");
+            return;
+        }
+        const url = as.HeartbeatApiUrl;
+        if (!url) {
+            console.info("URL for heartbeat is not specified, skipping send.");
+            return;
+        }
+        this.sender.sendHeartBeat(url, messageJson);
+    }
+
+    sendMessagedResultApi(messageJson) {
+        let as = this.applicationSettings;
+
+        const url = as.ResultsApiUrl;
+        if (!url) {
+            console.info("URL for ResultsApiUrl not specified, skipping send.");
+            return;
+        }
+        this.sender.sendMessageResultApi(url, messageJson);
     }
 
     sendMessageCustomHook(messageJson) {

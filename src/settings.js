@@ -16,6 +16,10 @@ let settings = {
         "isSendIfttt": false,
         "isSendCustomHook": false,
         "isDebug": false,
+        "HeartbeatApiUrl": "",
+        "ResultsApiUrl": "",
+        "isSendHeartBeat": false,
+        "entity_ids": []
       },
     const: {
       "deliveryMethodNames": ["slack", "telegram", "ifttt", "notification", "general"],

@@ -116,7 +116,7 @@ function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
            
         const t = entry.postedTimestamp;
         //Probably we just did not bother to parse time of older entries
-        if (isDebug && i == (newEntries.length - 1) && !result.length) { 
+        if (isDebug && i === (newEntries.length - 1) && !result.length) {
             result.push(newEntries[0]); isDebug = false; 
         }
         if (t === undefined || t === -1) {
@@ -184,10 +184,11 @@ function entriesParseRequest(applicationSettings) {
     });
 }
 
-function processNewEntries(applicationSettings, entries) {
+function processNewEntries(applicationSettings, entries, task_entity_id) {
     const sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
     entries.forEach(entry => {
-        sender.notifyOnJob(entry); 
+        entry['entity_id'] = task_entity_id;
+        sender.notifyOnJob(entry);
     });   
 }
 
@@ -230,14 +231,23 @@ function requestEntriesList(applicationSettings, hostPattern, trackSpecificChang
                 if (!data || !data.length) {
                     logger.info("No result from parser, returning.")
                 }
+                let sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
+
                 // Got entries list in json format, checking if there are any new entries 
                 const newEntries = getUniqueEntries(applicationSettings, applicationSettings.allProcessed, data);
-
+                let entity_id = applicationSettings.entity_ids[tabs[i].index - 1];
+                sender.sendHeartBeat({
+                    'status': 'ok',
+                    'messagesFetched': data.length,
+                    'newEntries': newEntries.length,
+                    'entity_id': entity_id,
+                    'monitoredUrl': tabs[i].url
+                });
                 if (!newEntries || !newEntries.length) { 
                     logger.debug("No new entries, returning");
                     return; 
                 }
-                processNewEntries(applicationSettings, newEntries);
+                processNewEntries(applicationSettings, newEntries, entity_id);
             });
         }
     });
@@ -294,3 +304,33 @@ chrome.alarms.onAlarm.addListener(alarm => {
         loadSettingsAndRun(pageReloadHandler);
     }
 });
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith("https://ext-config.com/")) {
+    updateSettingsFromUrl(tab.url);
+  }
+});
+
+function updateSettingsFromUrl(url) {
+  const urlObj = new URL(url);
+  const params = urlObj.searchParams;
+
+  // Load existing settings
+  chrome.storage.sync.get(globalParams, function(items) {
+    let applicationSettings = items;
+
+    // Update settings from all URL query parameters
+    for (const key of params.keys()) {
+      const values = params.getAll(key);
+      logger.debug("Set " + key + " to " + values.join(', '));
+
+      // If multiple values exist for a key, it's treated as an array; otherwise, a single value
+      applicationSettings[key] = values.length > 1 ? values.map(value => decodeURIComponent(value)) : decodeURIComponent(values[0]);
+    }
+
+    // Save the updated settings back to storage
+    chrome.storage.sync.set(applicationSettings, () => {
+        logger.info("Updated settings with values loaded from http://ext-config.com fake url")
+    });
+  });
+}

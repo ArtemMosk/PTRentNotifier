@@ -52,6 +52,31 @@ class Sender {
         });
     }
 
+    sendHeartBeat(url, message) {
+        console.debug("Sending heartbeat " + url);
+        console.debug(message);
+        fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(message)
+        }).catch(error => {
+            console.warn("Can't send message to heartbeat. Please check URL");
+            //console.debug(error);
+        });
+    }
+
+    sendMessageResultApi(webhookUrl, message) {
+        console.debug("Sending message " + webhookUrl + " for task entity " + message.task_entity_id);
+
+        console.debug("Sending message to Result API:")
+        console.debug(message);
+        fetch(webhookUrl, {
+            method: 'POST',
+            body: JSON.stringify(message)
+        }).catch(error => {
+            console.warn("Can't send message to result API. Please check URL")
+        });
+    }
+
     sendMessageCustomHook(webhookUrl, message) {
         console.debug("Sending message " + webhookUrl);
         console.debug("Sending message to custom hook:");
