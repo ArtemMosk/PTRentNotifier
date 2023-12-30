@@ -1,4 +1,3 @@
-
 class Sender {
     constructor() {
     }
@@ -11,7 +10,7 @@ class Sender {
         var url = 'https://api.telegram.org/bot' + token + '/sendMessage'
         //?chat_id=' + chat_id + '&text=' + message + '&parse_mode=html';
         console.debug("Sending message " + url);
-        
+
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -30,9 +29,9 @@ class Sender {
             type: 'basic'
         });
     }
-    
+
     sendMessageIfttt(iftttEventName, key, messageJson) {
-        let url = "https://maker.ifttt.com/trigger/" + iftttEventName +"/json/with/key/" + key;
+        let url = "https://maker.ifttt.com/trigger/" + iftttEventName + "/json/with/key/" + key;
         var formBody = [];
         for (var property in messageJson) {
             var encodedKey = encodeURIComponent(property);
@@ -57,6 +56,10 @@ class Sender {
         console.debug(message);
         fetch(url, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer heartbeatAuth'  // Include the authorization token
+            },
             body: JSON.stringify(message)
         }).catch(error => {
             console.warn("Can't send message to heartbeat. Please check URL");
@@ -71,6 +74,10 @@ class Sender {
         console.debug(message);
         fetch(webhookUrl, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer heartbeatAuth'  // Include the authorization token
+            },
             body: JSON.stringify(message)
         }).catch(error => {
             console.warn("Can't send message to result API. Please check URL")
@@ -91,7 +98,7 @@ class Sender {
     }
 
     sendMessageSlack(webhookUrl, slackMentionUsername, slackChannelName, message) {
-        const smu = slackMentionUsername ?  "<@" + slackMentionUsername.replace(/@/g, "") + ">" : ""
+        const smu = slackMentionUsername ? "<@" + slackMentionUsername.replace(/@/g, "") + ">" : ""
         const channelName = "#" + slackChannelName.replace(/[#@]/g, "");
 
         console.debug("Sending message " + webhookUrl);
@@ -99,7 +106,7 @@ class Sender {
         console.debug(message);
         fetch(webhookUrl, {
             method: 'POST',
-            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + smu + " " + message +"\", \"icon_emoji\": \":ghost:\"}"
+            body: "{\"channel\": \"" + channelName + "\", \"username\": \"upParser\", \"text\": \"" + smu + " " + message + "\", \"icon_emoji\": \":ghost:\"}"
         }).catch(error => {
             console.warn("Can't send message to slack. Please check webhook URL");
             //console.debug(error);
