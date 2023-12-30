@@ -315,6 +315,9 @@ function updateSettingsFromUrl(url) {
   const urlObj = new URL(url);
   const params = urlObj.searchParams;
 
+  // Define keys that should always be treated as arrays
+  const arrayKeys = ['entity_ids'];  // Add more keys here as needed
+
   // Load existing settings
   chrome.storage.sync.get(globalParams, function(items) {
     let applicationSettings = items;
@@ -324,13 +327,18 @@ function updateSettingsFromUrl(url) {
       const values = params.getAll(key);
       logger.debug("Set " + key + " to " + values.join(', '));
 
-      // If multiple values exist for a key, it's treated as an array; otherwise, a single value
-      applicationSettings[key] = values.length > 1 ? values.map(value => decodeURIComponent(value)) : decodeURIComponent(values[0]);
+      // Check if the key should always be an array
+      if (arrayKeys.includes(key)) {
+        applicationSettings[key] = values.map(value => decodeURIComponent(value));
+      } else {
+        // If multiple values exist for a key, it's treated as an array; otherwise, a single value
+        applicationSettings[key] = values.length > 1 ? values.map(value => decodeURIComponent(value)) : decodeURIComponent(values[0]);
+      }
     }
 
     // Save the updated settings back to storage
     chrome.storage.sync.set(applicationSettings, () => {
-        logger.info("Updated settings with values loaded from http://ext-config.com fake url")
+      logger.info("Updated settings with values loaded from http://ext-config.com fake url");
     });
   });
 }
