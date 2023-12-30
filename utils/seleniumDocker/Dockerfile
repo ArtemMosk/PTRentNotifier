@@ -1,4 +1,4 @@
-FROM selenium/standalone-chrome:4.6.0-20221104
+FROM selenium/standalone-chrome:120.0
 
 ARG DEFULT_VNC_PASSWORD=someComplexPassword
 ARG CROME_RUNNER_SH_NAME=chrome-runner.sh
@@ -11,4 +11,5 @@ RUN sed -i "s/wait\s/\/home\/seluser\/PTRentNotifier\/utils\/seleniumDocker\/${C
 RUN cat /opt/bin/entry_point.sh  
 USER seluser
 ADD ./PTRentNotifier/ /home/seluser/PTRentNotifier
+ADD ./GPTScrap/ /home/seluser/GPTScrap
 RUN x11vnc -storepasswd ${DEFULT_VNC_PASSWORD} /home/seluser/.vnc/passwd
