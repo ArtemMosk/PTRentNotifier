@@ -271,7 +271,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(details => {
     logger.info("Extension install background script onInstalled");
 
-    loadSettingsAndRun(initiatePageCheck); 
+    checkConfigTab();
+    loadSettingsAndRun(initiatePageCheck);
 });
 
 self.addEventListener('install', () => {
@@ -280,12 +281,14 @@ self.addEventListener('install', () => {
 
 chrome.runtime.onStartup.addListener(details => {
     logger.info("Extension startup background script onStartup");
+    checkConfigTab();
     loadSettingsAndRun(initiatePageCheck); 
 });
 
 chrome.management.onEnabled.addListener(details => {
     logger.info("Extension startup background script onEnabled");
-    loadSettingsAndRun(initiatePageCheck); 
+    checkConfigTab();
+    loadSettingsAndRun(initiatePageCheck);
 });
 
 function pageReloadHandler(applicationSettings) {
@@ -305,9 +308,22 @@ chrome.alarms.onAlarm.addListener(alarm => {
     }
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith("https://ext-config.com/")) {
+function checkForConfigUrl(tab) {
+  if (tab.url && tab.url.startsWith("https://ext-config.com/")) {
     updateSettingsFromUrl(tab.url);
+  }
+}
+function checkConfigTab() {
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      checkForConfigUrl(tab);
+    });
+  });
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    checkForConfigUrl(tab);
   }
 });
 
