@@ -1,7 +1,7 @@
 #!/bin/sh
 
-URL_OPEN_TIMEOUT="${URL_OPEN_TIMEOUT:-30}"  # Set default to 30 if not set
-FIRST_SLEEP_DURATION=$(($URL_OPEN_TIMEOUT))
+URL_OPEN_TIMEOUT="${URL_OPEN_TIMEOUT:-20}"  # Set default to 30 if not set
+FIRST_SLEEP_DURATION=$(($URL_OPEN_TIMEOUT * 3))
 
 # Initialize an empty string for the proxy argument
 PROXY_ARG=""
