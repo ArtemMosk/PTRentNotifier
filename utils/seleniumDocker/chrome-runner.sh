@@ -20,6 +20,7 @@ sleep $FIRST_SLEEP_DURATION
 for url in $urls
 do
 	echo "Opening URL: $url"
-	google-chrome $PROXY_ARG --load-extension=~/PTRentNotifier/ --disable-accelerated-2d-canvas --disable-gpu --hide-crash-restore-bubble --no-sandbox "$url" & sleep $URL_OPEN_TIMEOUT;
+	google-chrome $PROXY_ARG --load-extension=$CHROME_EXTENSIONS_TO_LOAD --disable-accelerated-2d-canvas --disable-gpu --hide-crash-restore-bubble --no-sandbox "$url" & sleep $URL_OPEN_TIMEOUT;
 	echo "Finished openin URL: $url"
 done
+

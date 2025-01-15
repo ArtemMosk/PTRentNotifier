@@ -20,14 +20,33 @@ RUN if [ -d "/tmp/chrome-profile" ] && [ "$(ls -A /tmp/chrome-profile/)" ]; then
         mkdir -p /home/seluser/.config/google-chrome && mv  /tmp/chrome-profile/* /home/seluser/.config/google-chrome/ && rm -rf /tmp/chrome-profile; \
     fi
 
-ARG USER=ArtemMosk
-ARG REPO=PTRentNotifier
-ARG BRANCH=main
+ARG EXTENSION_REPOS="ArtemMosk:PTRentNotifier:main"
+ARG DEFAULT_USER=ArtemMosk
+ARG DEFAULT_BRANCH=main
 
-ADD https://api.github.com/repos/$USER/$REPO/git/refs/heads/$BRANCH version.json
+# First, add version checks for all repos to invalidate cache when needed
+RUN for repo_spec in $EXTENSION_REPOS; do \
+        repo=$(echo $repo_spec | cut -d: -f1); \
+        user=$(echo $repo_spec | cut -d: -f2 -s || echo $DEFAULT_USER); \
+        branch=$(echo $repo_spec | cut -d: -f3 -s || echo $DEFAULT_BRANCH); \
+        \
+        # Add version.json for each repo and verify it exists
+        curl -s -o /home/seluser/${repo}_version.json https://api.github.com/repos/$user/$repo/git/refs/heads/$branch \
+            && echo "Version file created for $repo: " \
+            && cat /home/seluser/${repo}_version.json \
+            || echo "Failed to create version file for $repo"; \
+    done
 
-#For now will clone rather than pack local copy
-#ADD ./PTRentNotifier/ /home/seluser/PTRentNotifier
-RUN git clone -b $BRANCH https://github.com/$USER/$REPO.git /home/seluser/$REPO
+# Then clone all repos
+RUN for repo_spec in $EXTENSION_REPOS; do \
+        repo=$(echo $repo_spec | cut -d: -f1); \
+        user=$(echo $repo_spec | cut -d: -f2 -s || echo $DEFAULT_USER); \
+        branch=$(echo $repo_spec | cut -d: -f3 -s || echo $DEFAULT_BRANCH); \
+        \
+        git clone -b $branch https://github.com/$user/$repo.git /home/seluser/$repo; \
+    done
+    
+    
 ADD ./GPTScrap/ /home/seluser/GPTScrap
 RUN x11vnc -storepasswd ${DEFAULT_VNC_PASSWORD} /home/seluser/.vnc/passwd
+# Support multiple extension repositories

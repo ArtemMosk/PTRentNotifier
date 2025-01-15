@@ -1,12 +1,13 @@
 import LogWrapper from '/src/logWrapper.js';
-
-const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes.REMOTE_CONSOLE);
-
-logger.debug("Entering background script")
 import settings from './src/settings.js';
 import templates from './src/templates.js';
 import settingsHelper from '/src/settingsHelper.js';
 import JobMessageSenderFactory from './src/jobMessageSender.js';
+import UrlSettingsManager from './src/urlSettingsManager.js';
+
+const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes.REMOTE_CONSOLE);
+logger.debug("Entering background script");
+
 const PAGE_CHECK = "pageCheck";
 const PAGE_RELOADED = "pageReload";
 const manifest = chrome.runtime.getManifest();
@@ -15,6 +16,10 @@ const globalParams = settings.globalParams;
 const constants = settings.const;
 
 let isDebug = settings.globalParams.isDebug;
+
+// Initialize URL Settings Manager
+const urlSettingsManager = new UrlSettingsManager(logger);
+urlSettingsManager.initializeTabListeners(globalParams);
 
 function formParsersSettings() {
     const ps = [];
@@ -51,8 +56,7 @@ function loadSettingsAndRun(toRun) {
               logger.debug(items);
               applicationSettings.allProcessed = items.allProcessed;
               toRun(applicationSettings);
-          }); 
-
+          });
       });
 }
 
@@ -270,8 +274,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(details => {
     logger.info("Extension install background script onInstalled");
-
-    checkConfigTab();
+    urlSettingsManager.checkConfigTabs();
     loadSettingsAndRun(initiatePageCheck);
 });
 
@@ -281,13 +284,13 @@ self.addEventListener('install', () => {
 
 chrome.runtime.onStartup.addListener(details => {
     logger.info("Extension startup background script onStartup");
-    checkConfigTab();
-    loadSettingsAndRun(initiatePageCheck); 
+    urlSettingsManager.checkConfigTabs();
+    loadSettingsAndRun(initiatePageCheck);
 });
 
 chrome.management.onEnabled.addListener(details => {
     logger.info("Extension startup background script onEnabled");
-    checkConfigTab();
+    urlSettingsManager.checkConfigTabs();
     loadSettingsAndRun(initiatePageCheck);
 });
 
@@ -307,54 +310,3 @@ chrome.alarms.onAlarm.addListener(alarm => {
         loadSettingsAndRun(pageReloadHandler);
     }
 });
-
-function checkForConfigUrl(tab) {
-  if (tab.url && tab.url.startsWith("https://ext-config.com/")) {
-    updateSettingsFromUrl(tab.url);
-  }
-}
-function checkConfigTab() {
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach(tab => {
-      checkForConfigUrl(tab);
-    });
-  });
-}
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete') {
-    checkForConfigUrl(tab);
-  }
-});
-
-function updateSettingsFromUrl(url) {
-  const urlObj = new URL(url);
-  const params = urlObj.searchParams;
-
-  // Define keys that should always be treated as arrays
-  const arrayKeys = ['entity_ids'];  // Add more keys here as needed
-
-  // Load existing settings
-  chrome.storage.sync.get(globalParams, function(items) {
-    let applicationSettings = items;
-
-    // Update settings from all URL query parameters
-    for (const key of params.keys()) {
-      const values = params.getAll(key);
-      logger.debug("Set " + key + " to " + values.join(', '));
-
-      // Check if the key should always be an array
-      if (arrayKeys.includes(key)) {
-        applicationSettings[key] = values.map(value => decodeURIComponent(value));
-      } else {
-        // If multiple values exist for a key, it's treated as an array; otherwise, a single value
-        applicationSettings[key] = values.length > 1 ? values.map(value => decodeURIComponent(value)) : decodeURIComponent(values[0]);
-      }
-    }
-
-    // Save the updated settings back to storage
-    chrome.storage.sync.set(applicationSettings, () => {
-      logger.info("Updated settings with values loaded from http://ext-config.com fake url");
-    });
-  });
-}
