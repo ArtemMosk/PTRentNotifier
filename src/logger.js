@@ -224,7 +224,7 @@ export default class Logger {
 
             const gelfMessage = {
                 version: '1.1',
-                host: facility === 'test-race-chrome' ? 'test-race-extension' : 'browser_extension',
+                host: manifest.name || 'unknown_extension',
                 short_message: message,
                 full_message: data ? JSON.stringify(data) : message,
                 timestamp: Date.now() / 1000,
