@@ -1,11 +1,11 @@
-import LogWrapper from '/src/logWrapper.js';
+import Logger from '/src/logger.js';
 import settings from './src/settings.js';
 import templates from './src/templates.js';
 import settingsHelper from '/src/settingsHelper.js';
 import JobMessageSenderFactory from './src/jobMessageSender.js';
 import UrlSettingsManager from './src/urlSettingsManager.js';
 
-const logger = (new LogWrapper()).getLogger("background.js", LogWrapper.logTypes.REMOTE_CONSOLE);
+const logger = new Logger('BACKGROUND');
 logger.debug("Entering background script");
 
 const PAGE_CHECK = "pageCheck";
