@@ -159,3 +159,10 @@ function forceRun() {
 }
 
 document.getElementById('forceRun').addEventListener('click', forceRun);
+
+function dryRun() {
+  sendMessageToBackgroundScript("dryRun");
+  return false;
+}
+
+document.getElementById('dryRun').addEventListener('click', dryRun);

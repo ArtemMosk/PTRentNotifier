@@ -17,6 +17,9 @@ const constants = settings.const;
 
 let isDebug = settings.globalParams.isDebug;
 
+// Dry run state
+let isDryRun = false;
+
 // Initialize URL Settings Manager
 const urlSettingsManager = new UrlSettingsManager(logger);
 urlSettingsManager.initializeTabListeners(globalParams);
@@ -104,6 +107,17 @@ function clearProcessed(entityList, hours) {
 
 function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
     let result = [];
+    
+    // Handle dry run mode
+    if (isDryRun && newEntries.length > 0) {
+        // Pick random entry from the current results
+        const randomIndex = Math.floor(Math.random() * newEntries.length);
+        const testEntry = newEntries[randomIndex];
+        logger.log("DRY RUN: Processing test entry", testEntry);
+        isDryRun = false; // Reset flag
+        return [testEntry]; // Return only the test entry for processing
+    }
+    
     if (!Object.keys(allProcessed).length) {
         newEntries.forEach(item => addProcessed(allProcessed, item.url));
         logger.log("First run, skipping all entries");
@@ -268,6 +282,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
     }
     if (msg === 'forceRun') {
+        loadSettingsAndRun(pageReloadHandler);
+    }
+    if (msg === 'dryRun') {
+        isDryRun = true;
+        logger.log("DRY RUN mode activated");
         loadSettingsAndRun(pageReloadHandler);
     }
 });
