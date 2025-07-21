@@ -1,8 +1,5 @@
 import settings from '/src/settings.js';
 import settingsHelper from '/src/settingsHelper.js';
-import Logger from '/src/logger.js';
-
-const logger = new Logger('POPUP');
 
 const manifest = chrome.runtime.getManifest();
 const contentScripts = manifest['content_scripts'];
@@ -88,9 +85,9 @@ function switchVisibility(e, shouldShow) {
 }
 
 function sendMessageToBackgroundScript(msg) {
-  logger.debug("Sending message to background script", { message: msg });
+  console.log("Sending message to background script:", msg);
   chrome.runtime.sendMessage(msg, response => {
-    logger.debug("Sent request to background script", { message: msg, response });
+    console.log("Sent request to background script:", msg, "Response:", response);
   });
 }
 // Restores select box and checkbox state using the preferences
@@ -167,7 +164,7 @@ function forceRun() {
 }
 
 function dryRun() {
-  logger.log("Dry run button clicked");
+  console.log("Dry run button clicked");
   sendMessageToBackgroundScript("dryRun");
   return false;
 }
