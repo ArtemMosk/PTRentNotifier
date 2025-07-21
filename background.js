@@ -272,6 +272,7 @@ function requestEntriesList(applicationSettings, hostPattern, trackSpecificChang
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    logger.debug('Received message in background', { msg, senderId: sender.id });
     if (msg === 'updateSettings') {
         loadSettingsAndRun(initiatePageCheck);
     }

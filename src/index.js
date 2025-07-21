@@ -1,5 +1,8 @@
 import settings from '/src/settings.js';
 import settingsHelper from '/src/settingsHelper.js';
+import Logger from '/src/logger.js';
+
+const logger = new Logger('POPUP');
 
 const manifest = chrome.runtime.getManifest();
 const contentScripts = manifest['content_scripts'];
@@ -85,8 +88,9 @@ function switchVisibility(e, shouldShow) {
 }
 
 function sendMessageToBackgroundScript(msg) {
+  logger.debug("Sending message to background script", { message: msg });
   chrome.runtime.sendMessage(msg, response => {
-    console.debug("Sent request to background script: " + msg);
+    logger.debug("Sent request to background script", { message: msg, response });
   });
 }
 // Restores select box and checkbox state using the preferences
@@ -136,7 +140,14 @@ function restoreOptions() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', restoreOptions);
+document.addEventListener('DOMContentLoaded', () => {
+  restoreOptions();
+  
+  // Attach button event listeners after DOM is loaded
+  document.getElementById('testTelegram').addEventListener('click', testTelegramCaller);
+  document.getElementById('forceRun').addEventListener('click', forceRun);
+  document.getElementById('dryRun').addEventListener('click', dryRun);
+});
 
 const anyInput = Array.from(document.getElementsByTagName('input'));
 anyInput.forEach(input => {
@@ -150,19 +161,13 @@ function testTelegramCaller() {
   return false;
 }
 
-document.getElementById('testTelegram').addEventListener('click', testTelegramCaller);
-
-
 function forceRun() {
   sendMessageToBackgroundScript("forceRun");
   return false;
 }
 
-document.getElementById('forceRun').addEventListener('click', forceRun);
-
 function dryRun() {
+  logger.log("Dry run button clicked");
   sendMessageToBackgroundScript("dryRun");
   return false;
 }
-
-document.getElementById('dryRun').addEventListener('click', dryRun);
