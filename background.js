@@ -275,21 +275,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     logger.debug('Received message in background', { msg, senderId: sender.id });
     if (msg === 'updateSettings') {
         loadSettingsAndRun(initiatePageCheck);
+        sendResponse({status: 'settings updated'});
     }
     if (msg === 'testTelegram') {
         loadSettingsAndRun((applicationSettings) => {
             const sender = (new JobMessageSenderFactory()).getJobMessageSender(applicationSettings);
             sender.sendMessageTelegram("Паляниця", true);
         });
+        sendResponse({status: 'telegram test sent'});
     }
     if (msg === 'forceRun') {
         loadSettingsAndRun(pageReloadHandler);
+        sendResponse({status: 'force run initiated'});
     }
     if (msg === 'dryRun') {
         isDryRun = true;
         logger.log("DRY RUN mode activated");
         loadSettingsAndRun(pageReloadHandler);
+        sendResponse({status: 'dry run initiated'});
     }
+    return true; // Keep the message channel open for async response
 });
 
 chrome.runtime.onInstalled.addListener(details => {
