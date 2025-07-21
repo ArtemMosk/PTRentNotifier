@@ -113,14 +113,14 @@ function getUniqueEntries(applicationSettings, allProcessed, newEntries) {
         // Pick random entry from the current results
         const randomIndex = Math.floor(Math.random() * newEntries.length);
         const testEntry = newEntries[randomIndex];
-        logger.log("DRY RUN: Processing test entry", testEntry);
+        logger.info("DRY RUN: Processing test entry", testEntry);
         isDryRun = false; // Reset flag
         return [testEntry]; // Return only the test entry for processing
     }
     
     if (!Object.keys(allProcessed).length) {
         newEntries.forEach(item => addProcessed(allProcessed, item.url));
-        logger.log("First run, skipping all entries");
+        logger.info("First run, skipping all entries");
         saveProcessed(allProcessed);
         return result;
     }
@@ -290,7 +290,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg === 'dryRun') {
         isDryRun = true;
-        logger.log("DRY RUN mode activated");
+        logger.info("DRY RUN mode activated");
         loadSettingsAndRun(pageReloadHandler);
         sendResponse({status: 'dry run initiated'});
     }
